@@ -189,14 +189,14 @@ export default function Home() {
       />
       <div className="absolute inset-0 bg-black/50 -z-10" />
 
-      <header className="absolute top-0 left-0 right-0 px-4 pt-4 sm:px-6 sm:pt-6 flex items-center justify-between z-10">
+      <header className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between">
         <Image
           src="/images/Actora_logo.png"
           alt="Actora"
-          width={845}
-          height={264}
+          width={1097}
+          height={315}
           priority
-          className="h-12 w-auto drop-shadow-lg"
+          className="-mt-4 h-40 w-auto drop-shadow-lg"
         />
 
         <AnimatePresence>
@@ -206,7 +206,7 @@ export default function Home() {
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, ease: "easeOut" }}
-              className="flex items-center md:flex-1 md:ml-8"
+              className="flex items-center md:flex-1 md:ml-8 mr-4 sm:mr-6"
             >
               <ul className="hidden md:flex flex-1 items-center justify-around">
                 {PUBLIC_MENU.map((item) => (
