@@ -189,14 +189,14 @@ export default function Home() {
       />
       <div className="absolute inset-0 bg-black/50 -z-10" />
 
-      <header className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between">
+      <header className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between pl-4 sm:pl-6 pt-3 sm:pt-4">
         <Image
           src="/images/Actora_logo.png"
           alt="Actora"
           width={1097}
           height={315}
           priority
-          className="-mt-4 h-28 sm:h-32 lg:h-36 w-auto drop-shadow-lg"
+          className="h-16 w-auto drop-shadow-lg"
         />
 
         <AnimatePresence>
