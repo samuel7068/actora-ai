@@ -1,0 +1,90 @@
+services:
+  qdrant:
+    image: qdrant/qdrant:v1.18.0
+    container_name: actora_qdrant
+    restart: unless-stopped
+    volumes:
+      - qdrant_data:/qdrant/storage
+    # 호스트 6333(REST) 포트 외부 노출 — Lightsail 방화벽 Source 를 회사 IP 만으로 좁히는 게 권장
+    # 6334(gRPC) 는 외부 노출 안 함 (백엔드 내부 통신만)
+    ports:
+      - "6333:6333"
+    expose:
+      - "6334"
+    networks:
+      - actora_net
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:6333/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  backend:
+    build:
+      context: ./backend
+    container_name: actora_backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env.prod
+    environment:
+      ENVIRONMENT: prod
+      # 미디어 파일 저장 디렉토리 (컨테이너 내부 경로)
+      UPLOAD_DIR: /app/uploads
+      # nginx X-Accel-Redirect 사용 — backend 응답이 이 prefix 헤더만 보내면
+      # nginx 가 internal location /internal-uploads/ 에서 실제 파일 stream
+      XACCEL_PREFIX: /internal-uploads
+    extra_hosts:
+      # 호스트 native PostgreSQL 접근용 (Linux: host-gateway, Mac/Win은 자동)
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      qdrant:
+        condition: service_started
+    expose:
+      - "8000"
+    volumes:
+      # 미디어 업로드 영속화 (운영 서버는 /app/actora/uploads 에 실제 저장)
+      - ./uploads:/app/uploads
+      # 관리자 공유 노트 (관리자 API 가 읽음, read-only)
+      - ./TASK_SHARE.md:/app/TASK_SHARE.md:ro
+    networks:
+      - actora_net
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: actora_frontend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      # nginx 가 /api/* 를 가로채므로 Next.js rewrites 는 docker network 내부 fallback 만 의미
+      BACKEND_URL: http://backend:8000
+    depends_on:
+      backend:
+        condition: service_started
+    expose:
+      - "3000"
+    networks:
+      - actora_net
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: actora_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      # backend 의 ./uploads:/app/uploads 와 같은 호스트 디렉토리를 nginx 는 read-only 로 마운트
+      - ./uploads:/var/uploads:ro
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - actora_net
+
+volumes:
+  qdrant_data:
+
+networks:
+  actora_net:
+    driver: bridge

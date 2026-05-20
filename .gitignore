@@ -1,0 +1,55 @@
+# ─── OS ──────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ─── IDE / Editor ────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# ─── Env / Secrets ───────────────────────────────────
+.env
+.env.*
+!.env.*.example
+
+# ─── Logs ────────────────────────────────────────────
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ─── Qdrant 로컬 임베디드 데이터 (Mac dev) ──────────────
+qdrant_local/
+backend/qdrant_local/
+
+# ─── Python (backend) ────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+ENV/
+env/
+
+# ─── Node / Next.js (frontend) ───────────────────────
+node_modules/
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+
+# ─── Misc ────────────────────────────────────────────
+*.pem
+.turbo/
+.vercel/
