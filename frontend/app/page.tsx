@@ -196,7 +196,7 @@ export default function Home() {
           width={1097}
           height={315}
           priority
-          className="-mt-4 h-40 w-auto drop-shadow-lg"
+          className="-mt-4 h-28 sm:h-32 lg:h-36 w-auto drop-shadow-lg"
         />
 
         <AnimatePresence>
