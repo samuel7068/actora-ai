@@ -22,7 +22,7 @@ from src.database import Base
 _REGION_CODES = (
     "SEOUL", "BUSAN", "INCHEON", "DAEGU", "DAEJEON", "GWANGJU", "ULSAN", "SEJONG",
     "GYEONGGI", "GANGWON", "CHUNGBUK", "CHUNGNAM", "JEONBUK", "JEONNAM",
-    "GYEONGBUK", "GYEONGNAM", "JEJU",
+    "GYEONGBUK", "GYEONGNAM", "JEJU", "OVERSEAS",
 )
 _TALENT_CATEGORIES = (
     "ACTOR", "MODEL", "INFLUENCER", "VOCAL", "DANCER", "MC", "CREATOR",
@@ -54,20 +54,35 @@ class TalentMaster(Base):
     sub_categories = Column(JSONB, nullable=True)  # 예: ["MODEL","MC"]
 
     profile_image_url = Column(String(500), nullable=True)
+    # 다중 프로필 사진 URL — string 배열. 최소 1개, 최대 5개 (앱 레벨 검증).
+    profile_image_urls = Column(JSONB, nullable=True)
     introduction = Column(Text, nullable=True)
 
     height_cm = Column(SmallInteger, nullable=True)
     weight_kg = Column(SmallInteger, nullable=True)
+    # 체형 분류 (예: slim / standard / plus_size). 자유 텍스트 — 앱 레벨 enum
+    weight_range = Column(String(20), nullable=True)
+
+    # 신체/얼굴/비주얼 키워드 — 모두 JSONB string 배열
+    body_type = Column(JSONB, nullable=True)         # 예: ["chubby","soft_face"]
+    face_type = Column(JSONB, nullable=True)         # 예: ["round"]
+    visual_keywords = Column(JSONB, nullable=True)   # 예: ["mother_image","warm","ordinary_face"]
 
     # 다중 선택 언어 / 자유 입력 특기 (둘 다 string 배열)
     languages = Column(JSONB, nullable=True)
     skills = Column(JSONB, nullable=True)
+
+    # 학력: level 은 MIDDLE_SCHOOL/HIGH_SCHOOL/BACHELOR/GRADUATE
+    # major 는 BACHELOR/GRADUATE 에만 입력
+    education_level = Column(String(20), nullable=True)
+    education_major = Column(String(100), nullable=True)
 
     instagram_url = Column(String(500), nullable=True)
     youtube_url = Column(String(500), nullable=True)
     tiktok_url = Column(String(500), nullable=True)
 
     career_level = Column(String(20), nullable=True)  # NEWBIE / PRO
+    career_years = Column(SmallInteger, nullable=True)  # 경력 연차 (숫자)
     visibility_status = Column(
         String(20), nullable=False, server_default=text("'PRIVATE'")
     )

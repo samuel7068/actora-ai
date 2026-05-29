@@ -15,6 +15,14 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Actora AI",
   description: "AI가 연결하는 캐스팅 매칭 플랫폼 — 광고주와 영상 제작자를 위한 모델·연기자 추천 서비스",
+  icons: {
+    icon: [
+      { url: "/images/favicon.ico", sizes: "any" },
+      { url: "/images/favicon.png", type: "image/png", sizes: "512x512" },
+    ],
+    shortcut: "/images/favicon.ico",
+    apple: "/images/favicon.png",
+  },
 };
 
 export default function RootLayout({

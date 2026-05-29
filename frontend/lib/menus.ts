@@ -25,6 +25,7 @@ export type MenuItem = {
   label: string;
   href: string;
   Icon: LucideIcon;
+  description?: string; // 대시보드 카드 부제 (헤더 nav 에는 표시 안 함)
 };
 
 // ──────────────────────────────────────────────────────────────────
@@ -43,12 +44,48 @@ export const PUBLIC_MENU: MenuItem[] = [
 //   role_master(TALENT/DEFAULT).permission_json.menu 와 매칭
 // ──────────────────────────────────────────────────────────────────
 export const TALENT_MENU: MenuItem[] = [
-  { key: "profile", label: "내 프로필", href: "/talent/profile", Icon: User },
-  { key: "portfolio", label: "포트폴리오", href: "/talent/portfolio", Icon: Folder },
-  { key: "applications", label: "지원한 캐스팅", href: "/talent/applications", Icon: Send },
-  { key: "recommended", label: "추천 캐스팅", href: "/talent/recommended", Icon: Sparkles },
-  { key: "ai_report", label: "AI 분석 리포트", href: "/talent/ai-report", Icon: BarChart3 },
-  { key: "settings", label: "계정 설정", href: "/talent/settings", Icon: Settings },
+  {
+    key: "profile",
+    label: "내 프로필",
+    href: "/talent/profile",
+    Icon: User,
+    description: "프로필을 완성하여 더 많은 매칭 기회를 잡으세요.",
+  },
+  {
+    key: "portfolio",
+    label: "포트폴리오",
+    href: "/talent/portfolio",
+    Icon: Folder,
+    description: "좋은 영상은 좋은 캐스팅으로 이어집니다.",
+  },
+  {
+    key: "applications",
+    label: "지원한 캐스팅",
+    href: "/talent/applications",
+    Icon: Send,
+    description: "지원한 캐스팅의 진행 상황을 한눈에 확인하세요.",
+  },
+  {
+    key: "recommended",
+    label: "추천 캐스팅",
+    href: "/talent/recommended",
+    Icon: Sparkles,
+    description: "AI가 당신에게 어울리는 캐스팅을 찾아드립니다.",
+  },
+  {
+    key: "ai_report",
+    label: "AI 분석 리포트",
+    href: "/talent/ai-report",
+    Icon: BarChart3,
+    description: "AI가 분석한 당신의 강점과 매력 포인트를 확인하세요.",
+  },
+  {
+    key: "settings",
+    label: "계정 설정",
+    href: "/talent/settings",
+    Icon: Settings,
+    description: "계정·알림·공개 범위를 관리하세요.",
+  },
 ];
 
 // ──────────────────────────────────────────────────────────────────

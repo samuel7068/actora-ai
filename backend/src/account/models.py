@@ -5,6 +5,7 @@ from sqlalchemy import (
     Column,
     DateTime,
     String,
+    Text,
     text,
 )
 
@@ -24,6 +25,10 @@ class AccountMaster(Base):
     account_type = Column(String(20), nullable=False)
 
     is_active = Column(Boolean, nullable=False, server_default=text("TRUE"))
+
+    # 탈퇴 처리: is_active=FALSE 로 전환하면서 시각·사유 기록
+    deactivated_at = Column(DateTime(timezone=True), nullable=True)
+    deactivation_reason = Column(Text, nullable=True)
 
     last_login_at = Column(DateTime(timezone=True), nullable=True)
 
