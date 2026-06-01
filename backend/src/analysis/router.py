@@ -20,7 +20,7 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -34,6 +34,7 @@ from src.analysis.pipeline import (
     probe_video,
     transcribe_whisper,
 )
+from src.analysis.rag_index import delete_media_points, index_scenes
 from src.analysis.schemas import AnalyzeDebugResponse, StageInfo
 from src.auth.deps import get_current_account
 from src.config import get_settings
@@ -55,6 +56,17 @@ def _portfolio_relative_key(account_id: int, media_id: int) -> str:
     return f"talent/{account_id}/portfolio/{account_id}_{media_id}.mp4"
 
 
+def _build_ai_summary(rag_scenes: list[dict[str, Any]]) -> str | None:
+    """scene 별 scene_summary 들을 합쳐 talent_media.ai_summary 용 대표 요약 생성."""
+    parts: list[str] = []
+    for s in rag_scenes:
+        if isinstance(s, dict):
+            summ = s.get("scene_summary")
+            if isinstance(summ, str) and summ.strip():
+                parts.append(summ.strip())
+    return " ".join(parts) if parts else None
+
+
 async def _run_sync(func, *args, **kwargs):
     """블로킹 함수를 thread pool 에서 실행 (event loop 보호)."""
     return await asyncio.to_thread(func, *args, **kwargs)
@@ -63,20 +75,26 @@ async def _run_sync(func, *args, **kwargs):
 @analysis_router.post("/portfolio/analyze-debug", response_model=AnalyzeDebugResponse)
 async def analyze_debug(
     file: UploadFile = File(...),
+    account_id: int | None = Form(default=None),
     current=Depends(get_current_account),
     db: AsyncSession = Depends(get_db),
 ):
-    """업로드된 영상을 받아 1~4단계 파이프라인 실행 + 영구 저장.
+    """업로드된 영상을 분석 파이프라인 실행 + 영구 저장.
 
-    - TALENT 만 접근
-    - 정규화 성공 시 talent_media 행 생성 + 정규화본을 영구 디렉토리로 이동
-      파일명: talent/{account_id}/portfolio/{account_id}_{media_id}.mp4
-    - 원본 / 중간 산출물 / 임시 정규화본은 응답 후 삭제 (정규화본만 영구 보관)
-    - 단계별 실패는 stages 의 success=false 로 기록, 다음 단계는 가능하면 진행
+    - 본인 업로드: TALENT 가 자기 영상 (account_id 미지정)
+    - 관리자 대행 업로드: ADMIN 이 시드 인재의 영상 (account_id 지정)
+    - 정규화/RAG/Qdrant 적재 성공 시에만 talent_media 확정 (무결성)
     """
     account, _admin = current
-    if account.account_type != "TALENT":
-        raise HTTPException(status_code=403, detail="TALENT_ONLY")
+    # 대행 업로드(account_id 지정)면 ADMIN, 아니면 본인(TALENT)
+    if account_id is not None:
+        if account.account_type != "ADMIN":
+            raise HTTPException(status_code=403, detail="ADMIN_ONLY_FOR_PROXY_UPLOAD")
+        target_account_id = account_id
+    else:
+        if account.account_type != "TALENT":
+            raise HTTPException(status_code=403, detail="TALENT_ONLY")
+        target_account_id = current[0].account_id
 
     if not file.content_type or not file.content_type.startswith("video/"):
         raise HTTPException(
@@ -86,7 +104,7 @@ async def analyze_debug(
     # talent_master 행 존재 확인 (가입 미완 방지)
     talent = (
         await db.execute(
-            select(TalentMaster).where(TalentMaster.account_id == account.account_id)
+            select(TalentMaster).where(TalentMaster.account_id == target_account_id)
         )
     ).scalar_one_or_none()
     if not talent:
@@ -302,19 +320,44 @@ async def analyze_debug(
                 error="NO_SCENES_OR_AUDIO",
             ))
 
-        # ─────── 영구 저장: 정규화 성공 시에만 ───────
+        # ─────── 영구 저장 (무결성): media_id flush → 단계6 RAG → Qdrant 적재 성공 시에만 commit ───────
+        # 원칙: RAG 가 Qdrant 에 성공 적재(>=1건)되어야 DB·영상 파일을 확정한다.
+        #       하나라도 실패하면 rollback + Qdrant 보상삭제 (+ 임시영상은 finally 폐기) → 아무것도 남기지 않음.
+        #       → "검색 안 되는 유령 영상" 이 구조적으로 생기지 않는다.
         persisted_media_id: int | None = None
         persisted_path: str | None = None
         persisted_size: int | None = None
+        rag_scenes: list[dict[str, Any]] = []
 
-        if normalized_ok and normalized_path.exists():
+        if not (normalized_ok and normalized_path.exists()):
+            stages.append(StageInfo(
+                stage="rag_json",
+                label="RAG 분석 + Qdrant 적재 + 영구 저장",
+                success=False,
+                elapsed_ms=0,
+                error="SKIPPED_NORMALIZE_FAILED",
+            ))
+        elif not (scenes and keyframes_data):
+            stages.append(StageInfo(
+                stage="rag_json",
+                label="RAG 분석 + Qdrant 적재 + 영구 저장",
+                success=False,
+                elapsed_ms=0,
+                error="SKIPPED_NO_SCENES_OR_KEYFRAMES",
+            ))
+        else:
+            t0 = _now_ms()
+            keyframe_by_scene = {kf["scene_id"]: kf for kf in keyframes_data}
+            errors: list[str] = []
+            media_id: int | None = None
+            indexed_count = 0
+            ai_summary: str | None = None
             try:
-                # 1) talent_media 행 생성 (media_path 는 임시값, 이후 업데이트)
-                # sort_order = 같은 account 의 max + 100
+                # 1) talent_media flush 로 media_id 만 발급 (commit 은 Qdrant 성공 후)
                 cur_max = (
                     await db.execute(
                         select(TalentMedia.sort_order)
-                        .where(TalentMedia.account_id == account.account_id)
+                        .where(TalentMedia.account_id == target_account_id)
                         .order_by(TalentMedia.sort_order.desc())
                         .limit(1)
                     )
@@ -322,9 +365,9 @@ async def analyze_debug(
                 next_order = (cur_max or 0) + 100
 
                 row = TalentMedia(
-                    account_id=account.account_id,
+                    account_id=target_account_id,
                     media_type="MOVIE",
-                    media_path="__pending__",  # flush 후 업데이트
+                    media_path="__pending__",
                     original_file_name=file.filename or "upload.mp4",
                     stored_file_name="__pending__",
                     file_size=normalized_path.stat().st_size,
@@ -334,64 +377,16 @@ async def analyze_debug(
                     is_public=True,
                 )
                 db.add(row)
-                await db.flush()  # talent_media_id 발급
+                await db.flush()  # media_id 발급 (commit 안 함)
+                media_id = row.talent_media_id
 
-                # 2) 영구 경로 결정 + 파일 이동
-                relative_key = _portfolio_relative_key(
-                    account.account_id, row.talent_media_id
-                )
-                stored_name = f"{account.account_id}_{row.talent_media_id}.mp4"
-                final_path = absolute_path(relative_key)
-                final_path.parent.mkdir(parents=True, exist_ok=True)
-
-                shutil.move(str(normalized_path), str(final_path))
-
-                # 3) 행 업데이트 + commit
-                row.media_path = relative_key
-                row.stored_file_name = stored_name
-                row.file_size = final_path.stat().st_size
-
-                await db.commit()
-                persisted_media_id = row.talent_media_id
-                persisted_path = relative_key
-                persisted_size = row.file_size
-
-                # 디버그 stages 에 영구 저장 단계 정보 추가
-                stages.append(StageInfo(
-                    stage="persist",
-                    label="영구 저장 (talent_media)",
-                    success=True,
-                    elapsed_ms=0,
-                    data={
-                        "talent_media_id": persisted_media_id,
-                        "media_path": persisted_path,
-                        "file_size_bytes": persisted_size,
-                    },
-                ))
-            except Exception as e:
-                await db.rollback()
-                logger.exception(f"persist failed: {e}")
-                stages.append(StageInfo(
-                    stage="persist",
-                    label="영구 저장 (talent_media)",
-                    success=False,
-                    elapsed_ms=0,
-                    error=f"{type(e).__name__}: {e}",
-                ))
-
-        # ─────── 단계 6: GPT-4V scene 분석 + RAG JSON 생성 ───────
-        rag_scenes: list[dict[str, Any]] = []
-        if persisted_media_id and scenes and keyframes_data:
-            t0 = _now_ms()
-            keyframe_by_scene = {kf["scene_id"]: kf for kf in keyframes_data}
-            errors: list[str] = []
-            try:
+                # 2) 단계 6 — GPT-4V scene 분석
                 for sc in scenes:
                     try:
                         scene_json = await _run_sync(
                             analyze_scene_with_gpt,
-                            account_id=account.account_id,
-                            talent_media_id=persisted_media_id,
+                            account_id=target_account_id,
+                            talent_media_id=media_id,
                             scene=sc,
                             keyframe=keyframe_by_scene.get(sc["scene_id"]),
                             stt_segments=stt_segments,
@@ -406,10 +401,34 @@ async def analyze_debug(
                             "error": f"{type(e).__name__}: {e}",
                         })
 
-                # RAG 파일 저장: {UPLOAD_DIR}/rag/{account_id}_{talent_media_id}.txt
-                rag_relative = (
-                    f"rag/{account.account_id}_{persisted_media_id}.txt"
+                # 3) Qdrant 적재 — 무결성 핵심. 성공(>=1건)해야 이후 DB·영상 확정.
+                indexed_count = await index_scenes(
+                    account_id=target_account_id,
+                    talent_media_id=media_id,
+                    rag_scenes=rag_scenes,
+                    openai_api_key=config.OPENAI_API_KEY,
                 )
+                if indexed_count == 0:
+                    raise RuntimeError(
+                        "QDRANT_INDEX_EMPTY: 적재 가능한 scene 0건 — 검색 불가하므로 저장 취소"
+                    )
+
+                # 4) 여기 도달 = Qdrant 적재 성공 → 영상 영구화 + DB 확정
+                relative_key = _portfolio_relative_key(target_account_id, media_id)
+                stored_name = f"{target_account_id}_{media_id}.mp4"
+                final_path = absolute_path(relative_key)
+                final_path.parent.mkdir(parents=True, exist_ok=True)
+                shutil.move(str(normalized_path), str(final_path))
+
+                row.media_path = relative_key
+                row.stored_file_name = stored_name
+                row.file_size = final_path.stat().st_size
+                ai_summary = _build_ai_summary(rag_scenes)
+                if ai_summary:
+                    row.ai_summary = ai_summary
+
+                # RAG .txt 저장 (디버그용 — 추후 관리자 Qdrant 조회로 대체 예정)
+                rag_relative = f"rag/{target_account_id}_{media_id}.txt"
                 rag_path = absolute_path(rag_relative)
                 rag_path.parent.mkdir(parents=True, exist_ok=True)
                 import json as _json
@@ -418,35 +437,51 @@ async def analyze_debug(
                     encoding="utf-8",
                 )
 
+                await db.commit()  # ← Qdrant 성공 후에야 DB 확정
+                persisted_media_id = media_id
+                persisted_path = relative_key
+                persisted_size = row.file_size
+
                 stages.append(StageInfo(
                     stage="rag_json",
-                    label="GPT-4V scene 분석 + RAG JSON 저장",
+                    label="RAG 분석 + Qdrant 적재 + 영구 저장",
                     success=len(errors) == 0,
                     elapsed_ms=_now_ms() - t0,
                     data={
+                        "talent_media_id": persisted_media_id,
+                        "media_path": persisted_path,
+                        "file_size_bytes": persisted_size,
                         "scene_count": len(rag_scenes),
+                        "qdrant_indexed": indexed_count,
+                        "ai_summary_saved": bool(ai_summary),
                         "rag_file_path": rag_relative,
                         "errors": errors,
                     },
                     error="; ".join(errors) if errors else None,
                 ))
             except Exception as e:
-                logger.exception(f"rag generation failed: {e}")
+                # 무결성: 무엇이든 실패하면 전부 원복 — DB rollback + Qdrant 보상삭제 (임시영상은 finally 폐기)
+                await db.rollback()
+                if media_id is not None:
+                    try:
+                        await delete_media_points(media_id)
+                    except Exception as ce:
+                        logger.warning(f"qdrant compensating delete failed: {ce}")
+                persisted_media_id = None
+                logger.exception(f"persist+rag+index failed (rolled back): {e}")
                 stages.append(StageInfo(
                     stage="rag_json",
-                    label="GPT-4V scene 분석 + RAG JSON 저장",
+                    label="RAG 분석 + Qdrant 적재 + 영구 저장",
                     success=False,
                     elapsed_ms=_now_ms() - t0,
+                    data={
+                        "qdrant_indexed": indexed_count,
+                        "scene_count": len(rag_scenes),
+                        "rolled_back": True,
+                        "errors": errors,
+                    },
                     error=f"{type(e).__name__}: {e}",
                 ))
-        elif not persisted_media_id:
-            stages.append(StageInfo(
-                stage="rag_json",
-                label="GPT-4V scene 분석 + RAG JSON 저장",
-                success=False,
-                elapsed_ms=0,
-                error="SKIPPED_NO_PERSISTED_MEDIA",
-            ))
 
         return AnalyzeDebugResponse(
             job_id=job_id,
@@ -461,7 +496,9 @@ async def analyze_debug(
         )
 
     finally:
-        # 임시 디렉토리 정리 (정규화본은 영구 경로로 이동되었으므로 안전)
+        # 임시 디렉토리 정리.
+        #   성공 시: 정규화본은 영구 경로로 이동됨 → work_dir 에는 잔여물만 남아 안전.
+        #   실패 시: 정규화본이 work_dir 에 그대로 → 여기서 함께 폐기 (무결성: 흔적 안 남김).
         try:
             shutil.rmtree(work_dir, ignore_errors=True)
         except Exception as e:

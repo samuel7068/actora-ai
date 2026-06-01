@@ -320,7 +320,7 @@ def analyze_scene_with_gpt(
 ) -> dict[str, Any]:
     """GPT-4 Vision 으로 scene JSON 산출 (단계 6).
 
-    프롬프트는 backend/prompts/analysis.toml 의 [scene_analysis] 에서 로드.
+    프롬프트는 backend/prompts/portfolio_video_analysis.toml 의 [scene_analysis] 에서 로드.
     입력: keyframe(base64) + scene 시간 + STT 텍스트 + 음성 특징
     출력: RAG 용 scene JSON
     """
@@ -331,7 +331,7 @@ def analyze_scene_with_gpt(
     from src.analysis.prompts import get_prompt
     client = OpenAI(api_key=openai_api_key)
 
-    prompt = get_prompt("scene_analysis")
+    prompt = get_prompt("scene_analysis", file="portfolio_video_analysis.toml")
 
     # scene 에 해당하는 STT 텍스트만 합치기
     start, end = float(scene["start_sec"]), float(scene["end_sec"])

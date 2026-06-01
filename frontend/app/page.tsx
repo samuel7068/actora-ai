@@ -19,6 +19,7 @@ import RollingList from "@/components/RollingList";
 import TaskShareModal from "@/components/TaskShareModal";
 import UserMenu from "@/components/UserMenu";
 import { PUBLIC_MENU } from "@/lib/menus";
+import { isHiddenToday } from "@/lib/taskShare";
 import { useAuth } from "@/store/auth";
 
 // 비로그인 공용 메뉴는 lib/menus.ts 의 PUBLIC_MENU 사용
@@ -161,9 +162,10 @@ export default function Home() {
   const restore = useAuth((s) => s.restore);
   const account = useAuth((s) => s.account);
 
-  // ADMIN 으로 account 가 채워질 때마다 task-share 모달 자동 노출 (로그인 / 페이지 진입 모두)
+  // ADMIN 으로 account 가 채워질 때마다 task-share 모달 자동 노출.
+  // 단 "오늘 하루 그만 보기" 설정한 날에는 띄우지 않음.
   useEffect(() => {
-    if (account?.account_type === "ADMIN") {
+    if (account?.account_type === "ADMIN" && !isHiddenToday()) {
       setTaskShareOpen(true);
     }
   }, [account?.account_id, account?.account_type]);
@@ -173,7 +175,7 @@ export default function Home() {
   }, [restore]);
 
   useEffect(() => {
-    const t = setTimeout(() => setShowIntro(false), 4000);
+    const t = setTimeout(() => setShowIntro(false), 1000);
     return () => clearTimeout(t);
   }, []);
 

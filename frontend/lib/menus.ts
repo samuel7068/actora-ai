@@ -108,6 +108,7 @@ export const AGENCY_MENU: MenuItem[] = [
 // ──────────────────────────────────────────────────────────────────
 export const ADMIN_MENU: MenuItem[] = [
   { key: "dashboard", label: "대시보드", href: "/admin/dashboard", Icon: LayoutDashboard },
+  // 인재 등록 / 벡터 DB 조회는 대시보드 카드로 진입 (헤더 nav 에는 미노출)
   // 추후 추가: 계정 관리, 통계, 매칭 모니터링, 시스템 설정 등
 ];
 

@@ -19,6 +19,7 @@ from src.config import get_settings
 from src.database import get_db
 from src.auth.deps import get_current_account
 from src.media.schemas import MediaInfo, MediaListResponse
+from src.analysis.rag_index import delete_media_points
 from src.media.service import (
     absolute_path,
     save_upload_file,
@@ -45,6 +46,7 @@ def _to_info(row: TalentMedia) -> MediaInfo:
         mime_type=row.mime_type,
         title=row.title,
         description=row.description,
+        ai_summary=row.ai_summary,
         sort_order=row.sort_order,
         is_main=row.is_main,
         is_public=row.is_public,
@@ -177,9 +179,21 @@ async def delete_my_media(
     except OSError as e:
         logger.warning(f"media file remove failed: {e}")
 
-    # TODO: RAG 벡터 데이터 삭제 — Qdrant 에서 talent_media_id 필터로 포인트 삭제.
-    # RAG JSON 생성 단계 (project-rag-file-lifecycle) 에서 wire 예정.
-    # 또한 {account_id}_{talent_media_id}.txt RAG 파일도 함께 삭제.
+    # RAG .txt 제거 (uploads/rag/{account_id}_{talent_media_id}.txt) — best-effort
+    try:
+        rag_path = absolute_path(
+            f"rag/{row.account_id}_{row.talent_media_id}.txt"
+        )
+        if rag_path.exists():
+            os.remove(rag_path)
+    except OSError as e:
+        logger.warning(f"rag txt remove failed: {e}")
+
+    # Qdrant 벡터 제거 — talent_media_id 필터로 해당 영상의 scene 포인트 일괄 삭제 (best-effort)
+    try:
+        await delete_media_points(row.talent_media_id)
+    except Exception as e:
+        logger.warning(f"qdrant delete failed: {e}")
 
     await db.delete(row)
     await db.commit()

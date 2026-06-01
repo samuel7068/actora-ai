@@ -168,6 +168,10 @@ class TalentMedia(Base):
     title = Column(String(200), nullable=True)
     description = Column(Text, nullable=True)
 
+    # 영상 분석(단계 6) 시 생성한 RAG scene_summary 들을 합친 대표 요약.
+    # 사용자 입력(description)과 구분되는 AI 산출물.
+    ai_summary = Column(Text, nullable=True)
+
     sort_order = Column(Integer, nullable=False, server_default=text("0"))
     is_main = Column(Boolean, nullable=False, server_default=text("FALSE"))
     is_public = Column(Boolean, nullable=False, server_default=text("TRUE"))

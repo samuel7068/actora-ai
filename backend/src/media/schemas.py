@@ -18,6 +18,7 @@ class MediaInfo(BaseModel):
     mime_type: Optional[str] = None
     title: Optional[str] = None
     description: Optional[str] = None
+    ai_summary: Optional[str] = None  # 영상 분석(RAG) 대표 요약
     sort_order: int
     is_main: bool
     is_public: bool

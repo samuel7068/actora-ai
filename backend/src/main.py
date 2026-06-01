@@ -10,6 +10,7 @@ from src.qdrant import get_qdrant_client, close_qdrant_client, ping_qdrant
 from src.auth.router import auth_router
 from src.media.router import talent_media_router, media_router
 from src.admin.router import admin_router
+from src.agency.router import agency_router
 from src.talent.router import talent_profile_router
 from src.analysis.router import analysis_router
 from src.logging_config import (
@@ -97,6 +98,7 @@ app.include_router(analysis_router, prefix="/talent", tags=["talent-analysis"])
 app.include_router(talent_media_router, prefix="/talent", tags=["talent-media"])
 app.include_router(media_router, prefix="/media", tags=["media"])
 app.include_router(admin_router, prefix="/admin", tags=["admin"])
+app.include_router(agency_router, prefix="/agency", tags=["agency"])
 
 app.add_exception_handler(HTTPException, http_exception_handler)
 app.add_exception_handler(Exception, global_exception_handler)

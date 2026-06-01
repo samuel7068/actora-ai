@@ -1,0 +1,129 @@
+[
+  {
+    "scene_id": "scene_001",
+    "scene_start_sec": 0.0,
+    "scene_end_sec": 59.042,
+    "role": {
+      "character_name": "",
+      "character_type": "일상 토크형",
+      "occupation": "연애 고민을 이야기하는 일반인",
+      "age_range": "20s",
+      "gender_appearance": "female"
+    },
+    "era": {
+      "period": "현대",
+      "setting": "실내 거실",
+      "confidence": 0.86
+    },
+    "scene_description": "긴 생머리의 20대 여성으로 보이는 인물이 실내 거실에서 카메라를 향해 연애 고민을 털어놓고 있다. 밝은 피부톤과 부드러운 눈매, 편안한 차림이 친근한 분위기를 만들며, 말은 빠르지만 중간중간 멈춤이 많아 고민과 망설임이 함께 느껴진다.",
+    "acting_analysis": {
+      "acting_style": [
+        "자연스러운 토크",
+        "일상 대화형",
+        "감정 토로형"
+      ],
+      "emotion_delivery": "연애에 대한 답답함과 혼란, 약간의 투덜거림이 섞인 감정 전달",
+      "immersion_level": "중간",
+      "camera_presence": "정면 응시가 자연스럽고 친근한 브이로그형 존재감",
+      "strength_keywords": [
+        "자연스러움",
+        "친근함",
+        "공감 유도",
+        "생활 연기",
+        "감정 표현"
+      ],
+      "weakness_keywords": [
+        "산만함",
+        "말의 끊김",
+        "감정 기복",
+        "정리되지 않은 화법"
+      ]
+    },
+    "speech_analysis": {
+      "speech_style": [
+        "수다체",
+        "구어체",
+        "하소연형",
+        "대화체"
+      ],
+      "tone_keywords": [
+        "친근한",
+        "투덜거리는",
+        "답답한",
+        "하이톤",
+        "감정적인"
+      ],
+      "speech_speed": "빠름",
+      "voice_characteristics": [
+        "높은 음역대",
+        "말끝이 자주 흐려짐",
+        "호흡이 자주 끊김",
+        "감정이 실린 발화"
+      ]
+    },
+    "physical_expression": {
+      "facial_expression_keywords": [
+        "미소",
+        "살짝 찡그림",
+        "고민스러운 표정",
+        "투정 섞인 표정"
+      ],
+      "gesture_keywords": [
+        "고개를 살짝 기울임",
+        "말하며 표정 변화",
+        "가벼운 손동작",
+        "감정에 따라 몸을 앞으로 기울임"
+      ],
+      "eye_contact_style": "카메라를 직접 바라보며 이야기하는 정면 응시",
+      "body_language_keywords": [
+        "편안한 자세",
+        "친근한 태도",
+        "감정이 드러나는 몸짓",
+        "일상적인 리액션"
+      ]
+    },
+    "appearance": {
+      "hair_length": "롱헤어",
+      "hair": "긴 생머리 흑갈색",
+      "image_type": "친근형",
+      "eye_size": "보통",
+      "eyelid": "유쌍",
+      "eye_shape": "아몬드형",
+      "eye_tail": "보통",
+      "body_type": "보통형",
+      "body_style": "일반인형",
+      "skin_tone": "밝은 피부톤",
+      "impression_keywords": [
+        "친근",
+        "청순",
+        "동안",
+        "자연스러움",
+        "부드러움"
+      ]
+    },
+    "resembling_celebrities": {
+      "candidates": [],
+      "confidence": 0.0,
+      "note": ""
+    },
+    "search_keywords": [
+      "20대 여성",
+      "긴 생머리",
+      "밝은 피부톤",
+      "친근한 이미지",
+      "연애 고민",
+      "일상 토크",
+      "브이로그",
+      "자연스러운 말투",
+      "빠른 말속도",
+      "투덜거리는 톤",
+      "실내 거실",
+      "카메라 정면 응시",
+      "공감형",
+      "생활 연기"
+    ],
+    "scene_summary": "긴 생머리와 밝은 피부톤의 20대 여성으로 보이는 인물이 실내 거실에서 카메라를 정면으로 보며 연애 고민을 쏟아낸다. 말은 빠르지만 중간중간 멈춤이 많고, 미소와 찡그림이 섞인 표정이 친근한 동안 이미지와 함께 답답한 감정을 자연스럽게 드러낸다.",
+    "account_id": "5",
+    "talent_media_id": "13"
+  }
+]

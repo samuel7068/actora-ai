@@ -1,8 +1,10 @@
 """프롬프트 로더 — backend/prompts/*.toml 를 로드해 dict 로 제공.
 
+정책: 프롬프트 1개당 .toml 파일 1개. 호출 시 file 로 어떤 파일인지 명시.
+
 사용:
     from src.analysis.prompts import get_prompt
-    p = get_prompt("scene_analysis")
+    p = get_prompt("scene_analysis", file="portfolio_video_analysis.toml")
     system = p["system"]
     user_msg = p["user_template"].format(scene_id="...", ...)
     model = p.get("model", "gpt-4o-mini")
@@ -39,7 +41,7 @@ def _load_file(filename: str) -> dict:
     return data
 
 
-def get_prompt(name: str, *, file: str = "analysis.toml") -> dict:
+def get_prompt(name: str, *, file: str) -> dict:
     """프롬프트 dict 반환. 키: system, user_template, model, temperature, version, description."""
     data = _load_file(file)
     if name not in data:

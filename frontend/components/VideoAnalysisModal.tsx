@@ -9,6 +9,8 @@ import { api } from "@/lib/api";
 type Props = {
   open: boolean;
   onClose: () => void;
+  /** 관리자 대행 업로드 시 대상 인재 account_id. 없으면 본인 업로드. */
+  accountId?: number;
 };
 
 const SUMMARY_TAB_KEY = "__summary__";
@@ -34,7 +36,7 @@ type AnalyzeResponse = {
   rag_scenes?: Record<string, unknown>[] | null;
 };
 
-export default function VideoAnalysisModal({ open, onClose }: Props) {
+export default function VideoAnalysisModal({ open, onClose, accountId }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
@@ -86,6 +88,7 @@ export default function VideoAnalysisModal({ open, onClose }: Props) {
     try {
       const form = new FormData();
       form.append("file", videoFile);
+      if (accountId != null) form.append("account_id", String(accountId));
       const res = await api.post<AnalyzeResponse>(
         "/talent/portfolio/analyze-debug",
         form,
@@ -133,7 +136,7 @@ export default function VideoAnalysisModal({ open, onClose }: Props) {
               <div className="flex items-center gap-2">
                 <Film className="w-5 h-5 text-zinc-700" />
                 <h2 className="text-lg font-bold text-zinc-900">
-                  영상 분석 디버그 — 파이프라인 1~4 단계
+                  AI 영상 분석
                 </h2>
                 {result && (
                   <>
@@ -220,12 +223,12 @@ export default function VideoAnalysisModal({ open, onClose }: Props) {
                   {analyzing ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      분석중… (수십 초~수 분)
+                      분석중…
                     </>
                   ) : (
                     <>
                       <Play className="w-4 h-4" />
-                      파이프라인 1~4 실행
+                      분석 시작
                     </>
                   )}
                 </button>
@@ -241,16 +244,16 @@ export default function VideoAnalysisModal({ open, onClose }: Props) {
               <div className="flex flex-col overflow-hidden">
                 {!result && !analyzing && (
                   <div className="flex-1 flex items-center justify-center text-zinc-400 text-sm p-10 text-center">
-                    좌측에서 비디오를 선택하고 <b className="mx-1 text-zinc-600">파이프라인 1~4 실행</b> 을 누르면
+                    좌측에서 영상을 선택하고 <b className="mx-1 text-zinc-600">분석 시작</b> 을 누르면
                     <br />
-                    여기에 각 단계 결과(JSON / 키프레임 / STT)가 표시됩니다.
+                    AI 가 영상을 분석한 결과가 여기에 표시됩니다.
                   </div>
                 )}
 
                 {analyzing && (
                   <div className="flex-1 flex flex-col items-center justify-center text-zinc-500 text-sm gap-3">
                     <Loader2 className="w-8 h-8 animate-spin" />
-                    분석 진행 중… (영상 길이에 따라 수십 초~수 분 소요)
+                    분석 진행 중…
                   </div>
                 )}
 
@@ -581,13 +584,12 @@ function topN(map: Record<string, number>, n = 12): [string, number][] {
 }
 
 const AGE_LABEL_KO: Record<string, string> = {
-  baby: "영아",
-  child: "어린이 (3~9)",
-  teen: "10대",
-  "20s_early": "20대 초",
-  "20s_late": "20대 후",
-  "30s_early": "30대 초",
-  "30s_late": "30대 후",
+  child_actor: "아역 (5~7)",
+  elementary: "초등학생 (8~12)",
+  middle_school: "중학생 (13~16)",
+  high_school: "고등학생 (17~19)",
+  "20s": "20대",
+  "30s": "30대",
   "40s": "40대",
   "50s": "50대",
   "60s": "60대",
@@ -610,11 +612,8 @@ function OverallSummaryView({
   const genders: Record<string, number> = {};
   const characterTypes: Record<string, number> = {};
   const occupations: Record<string, number> = {};
-  const socialStatuses: Record<string, number> = {};
   const periods: Record<string, number> = {};
   const settings: Record<string, number> = {};
-  const emotionsPrimary: Record<string, number> = {};
-  const emotionsSecondary: Record<string, number> = {};
   const actingStyles: Record<string, number> = {};
   const emotionDeliveries: Record<string, number> = {};
   const speechStyles: Record<string, number> = {};
@@ -625,10 +624,14 @@ function OverallSummaryView({
   const gestures: Record<string, number> = {};
   const bodyLanguages: Record<string, number> = {};
   const eyeContactStyles: Record<string, number> = {};
-  const hairs: Record<string, number> = {};
-  const faceShapes: Record<string, number> = {};
-  const eyeStyles: Record<string, number> = {};
+  const hairLengths: Record<string, number> = {};
+  const imageTypes: Record<string, number> = {};
+  const eyeSizes: Record<string, number> = {};
+  const eyelids: Record<string, number> = {};
+  const eyeShapes: Record<string, number> = {};
+  const eyeTails: Record<string, number> = {};
   const bodyTypes: Record<string, number> = {};
+  const bodyStyles: Record<string, number> = {};
   const skinTones: Record<string, number> = {};
   const impressions: Record<string, number> = {};
   const celebrities: Record<string, number> = {};
@@ -642,11 +645,8 @@ function OverallSummaryView({
     bump(genders, pickStr(s, "role", "gender_appearance"));
     bump(characterTypes, pickStr(s, "role", "character_type"));
     bump(occupations, pickStr(s, "role", "occupation"));
-    bump(socialStatuses, pickStr(s, "role", "social_status"));
     bump(periods, pickStr(s, "era", "period"));
     bump(settings, pickStr(s, "era", "setting"));
-    bumpAll(emotionsPrimary, pickArr(s, "emotion_target", "primary"));
-    bumpAll(emotionsSecondary, pickArr(s, "emotion_target", "secondary"));
     bumpAll(actingStyles, pickArr(s, "acting_analysis", "acting_style"));
     bump(emotionDeliveries, pickStr(s, "acting_analysis", "emotion_delivery"));
     bumpAll(speechStyles, pickArr(s, "speech_analysis", "speech_style"));
@@ -657,10 +657,14 @@ function OverallSummaryView({
     bumpAll(gestures, pickArr(s, "physical_expression", "gesture_keywords"));
     bumpAll(bodyLanguages, pickArr(s, "physical_expression", "body_language_keywords"));
     bump(eyeContactStyles, pickStr(s, "physical_expression", "eye_contact_style"));
-    bump(hairs, pickStr(s, "appearance", "hair"));
-    bump(faceShapes, pickStr(s, "appearance", "face_shape"));
-    bump(eyeStyles, pickStr(s, "appearance", "eye_style"));
+    bump(hairLengths, pickStr(s, "appearance", "hair_length"));
+    bump(imageTypes, pickStr(s, "appearance", "image_type"));
+    bump(eyeSizes, pickStr(s, "appearance", "eye_size"));
+    bump(eyelids, pickStr(s, "appearance", "eyelid"));
+    bump(eyeShapes, pickStr(s, "appearance", "eye_shape"));
+    bump(eyeTails, pickStr(s, "appearance", "eye_tail"));
     bump(bodyTypes, pickStr(s, "appearance", "body_type"));
+    bump(bodyStyles, pickStr(s, "appearance", "body_style"));
     bump(skinTones, pickStr(s, "appearance", "skin_tone"));
     bumpAll(impressions, pickArr(s, "appearance", "impression_keywords"));
     bumpAll(celebrities, pickArr(s, "resembling_celebrities", "candidates"));
@@ -697,12 +701,16 @@ function OverallSummaryView({
 
       {/* 외형 프로필 */}
       <SummarySection title="외형 프로필 (Appearance)">
-        <Pair label="연령대" entries={topN(ageRanges, 5)} labelMap={AGE_LABEL_KO} />
+        <Pair label="연령대" entries={topN(ageRanges, 8)} labelMap={AGE_LABEL_KO} />
         <Pair label="외형 성별" entries={topN(genders, 3)} labelMap={GENDER_LABEL_KO} />
-        <Pair label="헤어" entries={topN(hairs, 5)} />
-        <Pair label="얼굴형" entries={topN(faceShapes, 5)} />
-        <Pair label="눈매" entries={topN(eyeStyles, 5)} />
+        <Pair label="머리 길이" entries={topN(hairLengths, 6)} />
+        <Pair label="이미지형" entries={topN(imageTypes, 9)} />
+        <Pair label="눈 크기" entries={topN(eyeSizes, 3)} />
+        <Pair label="쌍꺼풀" entries={topN(eyelids, 3)} />
+        <Pair label="눈 형태" entries={topN(eyeShapes, 3)} />
+        <Pair label="눈꼬리" entries={topN(eyeTails, 3)} />
         <Pair label="체형" entries={topN(bodyTypes, 5)} />
+        <Pair label="체형 스타일" entries={topN(bodyStyles, 10)} />
         <Pair label="피부톤" entries={topN(skinTones, 3)} />
         <Pair label="인상 키워드" entries={topN(impressions, 8)} />
       </SummarySection>
@@ -716,19 +724,12 @@ function OverallSummaryView({
       <SummarySection title="역할 (Role)">
         <Pair label="역할 유형" entries={topN(characterTypes, 8)} />
         <Pair label="직업" entries={topN(occupations, 8)} />
-        <Pair label="사회적 위치" entries={topN(socialStatuses, 5)} />
       </SummarySection>
 
       {/* 시대·장소 */}
       <SummarySection title="시대 · 장소 (Era)">
         <Pair label="시대" entries={topN(periods, 5)} />
         <Pair label="장소" entries={topN(settings, 10)} />
-      </SummarySection>
-
-      {/* 감정 */}
-      <SummarySection title="감정 (Emotion)">
-        <Pair label="핵심 감정" entries={topN(emotionsPrimary, 10)} />
-        <Pair label="보조 감정" entries={topN(emotionsSecondary, 10)} />
       </SummarySection>
 
       {/* 연기 분석 */}

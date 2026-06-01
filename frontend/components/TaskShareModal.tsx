@@ -2,11 +2,12 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { ShieldAlert, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 
 import { api } from "@/lib/api";
+import { TASK_SHARE_HIDDEN_KEY, todayStr } from "@/lib/taskShare";
 
 type Props = {
   open: boolean;
@@ -17,6 +18,15 @@ export default function TaskShareModal({ open, onClose }: Props) {
   const [content, setContent] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [dontShowToday, setDontShowToday] = useState(false);
+
+  // 닫을 때 "오늘 그만 보기" 가 체크돼 있으면 오늘 날짜 저장
+  const handleClose = useCallback(() => {
+    if (dontShowToday && typeof window !== "undefined") {
+      localStorage.setItem(TASK_SHARE_HIDDEN_KEY, todayStr());
+    }
+    onClose();
+  }, [dontShowToday, onClose]);
 
   // 열릴 때 마다 fetch
   useEffect(() => {
@@ -47,11 +57,11 @@ export default function TaskShareModal({ open, onClose }: Props) {
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") handleClose();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+  }, [open, handleClose]);
 
   return (
     <AnimatePresence>
@@ -63,7 +73,7 @@ export default function TaskShareModal({ open, onClose }: Props) {
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
           className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4 py-8"
-          onClick={onClose}
+          onClick={handleClose}
         >
           <motion.div
             initial={{ opacity: 0, y: 16, scale: 0.98 }}
@@ -88,7 +98,7 @@ export default function TaskShareModal({ open, onClose }: Props) {
               </div>
               <button
                 type="button"
-                onClick={onClose}
+                onClick={handleClose}
                 aria-label="닫기"
                 className="flex-shrink-0 text-zinc-400 hover:text-zinc-700 transition-colors"
               >
@@ -160,10 +170,19 @@ export default function TaskShareModal({ open, onClose }: Props) {
             </div>
 
             {/* 푸터 */}
-            <div className="px-7 py-4 border-t border-zinc-200 flex items-center justify-end gap-2">
+            <div className="px-7 py-4 border-t border-zinc-200 flex items-center justify-between gap-2">
+              <label className="flex items-center gap-2 text-sm text-zinc-600 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={dontShowToday}
+                  onChange={(e) => setDontShowToday(e.target.checked)}
+                  className="w-4 h-4 accent-zinc-900"
+                />
+                오늘 하루 그만 보기
+              </label>
               <button
                 type="button"
-                onClick={onClose}
+                onClick={handleClose}
                 className="rounded-lg bg-zinc-900 px-5 py-2 text-sm font-semibold text-white hover:bg-zinc-800 transition-colors"
               >
                 확인
