@@ -1,0 +1,138 @@
+[
+  {
+    "scene_id": "scene_001",
+    "scene_start_sec": 0.0,
+    "scene_end_sec": 46.208,
+    "role": {
+      "character_name": "",
+      "character_type": "일상 대화형 화자",
+      "occupation": "불명",
+      "social_status": "일반인",
+      "age_range": "20s_early",
+      "gender_appearance": "female"
+    },
+    "era": {
+      "period": "현대",
+      "setting": "실내 방",
+      "confidence": 0.96
+    },
+    "emotion_target": {
+      "primary": [
+        "담담함",
+        "유쾌함"
+      ],
+      "secondary": [
+        "호기심",
+        "자기확신",
+        "가벼운 흥분"
+      ],
+      "emotion_flow": [
+        "꿈 이야기를 꺼내며 담담하게 시작",
+        "복싱하듯 싸우는 장면을 말하며 말맛을 살려 흥미롭게 전개",
+        "꿈 해몽 결과를 전하며 약간의 확신과 만족감으로 마무리"
+      ]
+    },
+    "scene_description": "긴 생머리의 20대 초반 여성이 단정한 회색 티셔츠 차림으로 실내 방에서 카메라를 바라보며 꿈 이야기를 풀어놓는다. 말은 빠르지 않지만 중간중간 멈춤이 많고, 손짓과 표정으로 상황을 살리며 가볍고 친근한 톤으로 자신의 해몽을 전한다.",
+    "acting_analysis": {
+      "acting_style": [
+        "자연스러운 일상형",
+        "설명형",
+        "리액션 중심",
+        "가벼운 코믹 톤"
+      ],
+      "emotion_delivery": "감정을 과장하지 않고 담담하게 시작해, 꿈속 상황을 묘사할 때는 말맛과 리듬을 살려 유쾌하게 전달한다.",
+      "immersion_level": "중간",
+      "camera_presence": "정면 응시 중심으로 친근하게 말을 건네는 브이로그형 존재감",
+      "strength_keywords": [
+        "편안한 전달력",
+        "생활 연기",
+        "말맛",
+        "리듬감",
+        "친근함"
+      ],
+      "weakness_keywords": [
+        "강한 감정 폭발은 적음",
+        "극적 긴장감은 낮음"
+      ]
+    },
+    "speech_analysis": {
+      "speech_style": [
+        "구어체",
+        "설명형",
+        "즉흥 토크",
+        "반복 강조"
+      ],
+      "tone_keywords": [
+        "담담한",
+        "가벼운",
+        "친근한",
+        "수다스러운",
+        "유쾌한"
+      ],
+      "speech_speed": "보통",
+      "voice_characteristics": [
+        "중간보다 높은 음역",
+        "말 사이 휴지가 많은 편",
+        "감정 기복이 크지 않은 편",
+        "또렷하고 편안한 발성"
+      ]
+    },
+    "physical_expression": {
+      "facial_expression_keywords": [
+        "차분한 표정",
+        "가벼운 미소",
+        "설명하는 표정",
+        "집중한 눈빛"
+      ],
+      "gesture_keywords": [
+        "작은 손짓",
+        "설명하듯 손을 움직임",
+        "몸을 약간 앞으로 기울임"
+      ],
+      "eye_contact_style": "카메라 정면 응시",
+      "body_language_keywords": [
+        "편안한 자세",
+        "상체 중심의 소극적 움직임",
+        "자연스러운 브이로그 자세"
+      ]
+    },
+    "appearance": {
+      "hair": "긴 생머리 흑발",
+      "face_shape": "계란형",
+      "eye_style": "또렷한",
+      "body_type": "보통",
+      "skin_tone": "밝은 피부톤",
+      "impression_keywords": [
+        "동안",
+        "청순",
+        "자연스러움",
+        "친근함",
+        "소탈함"
+      ]
+    },
+    "resembling_celebrities": {
+      "candidates": [],
+      "confidence": 0.0,
+      "note": ""
+    },
+    "search_keywords": [
+      "20대 초반 여성",
+      "긴 생머리",
+      "흑발",
+      "또렷한 눈매",
+      "동안",
+      "청순",
+      "실내 방",
+      "브이로그",
+      "꿈 이야기",
+      "담담한",
+      "친근한",
+      "유쾌한",
+      "일상 대화",
+      "자연스러운 연기"
+    ],
+    "scene_summary": "긴 생머리 흑발의 20대 초반 여성이 실내 방에서 카메라를 보며 꿈 이야기를 담담하게 풀어놓는다. 또렷한 눈매와 편안한 자세가 보이며, 중간중간 멈춤이 있는 구어체 톤으로 유쾌하고 친근한 일상형 화자 이미지를 만든다.",
+    "account_id": "3",
+    "talent_media_id": "7"
+  }
+]

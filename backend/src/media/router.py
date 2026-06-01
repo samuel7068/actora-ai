@@ -177,6 +177,10 @@ async def delete_my_media(
     except OSError as e:
         logger.warning(f"media file remove failed: {e}")
 
+    # TODO: RAG 벡터 데이터 삭제 — Qdrant 에서 talent_media_id 필터로 포인트 삭제.
+    # RAG JSON 생성 단계 (project-rag-file-lifecycle) 에서 wire 예정.
+    # 또한 {account_id}_{talent_media_id}.txt RAG 파일도 함께 삭제.
+
     await db.delete(row)
     await db.commit()
     return {"success": True, "deleted_id": media_id}

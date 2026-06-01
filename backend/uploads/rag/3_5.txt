@@ -1,0 +1,88 @@
+[
+  {
+    "scene_id": "scene_001",
+    "scene_start_sec": 0.0,
+    "scene_end_sec": 59.042,
+    "role": {
+      "character_name": "",
+      "character_type": "",
+      "occupation": "",
+      "social_status": ""
+    },
+    "era": {
+      "period": "현대",
+      "setting": "실내",
+      "confidence": 0.8
+    },
+    "emotion_target": {
+      "primary": [
+        "혼란",
+        "불안",
+        "친근함"
+      ],
+      "secondary": [],
+      "emotion_flow": []
+    },
+    "scene_description": "젊은 여성 캐릭터가 실내에서 카메라를 바라보며 이야기하고 있다. 그녀는 편안한 복장을 하고 있으며, 표정은 다소 불안해 보이지만 친근한 미소를 지니고 있다. 대화의 내용은 연애에 대한 고민을 담고 있어 감정이입이 잘 된다.",
+    "acting_analysis": {
+      "acting_style": [
+        "자연스러운",
+        "일상적인"
+      ],
+      "emotion_delivery": "감정이입이 잘 되는 대화",
+      "immersion_level": "중간",
+      "camera_presence": "적극적",
+      "strength_keywords": [
+        "친근함",
+        "자연스러움"
+      ],
+      "weakness_keywords": [
+        "혼란스러움"
+      ]
+    },
+    "speech_analysis": {
+      "speech_style": [
+        "일상적인",
+        "친근한"
+      ],
+      "tone_keywords": [
+        "부드러운",
+        "차분한"
+      ],
+      "speech_speed": "보통",
+      "voice_characteristics": [
+        "맑은",
+        "부드러운"
+      ]
+    },
+    "physical_expression": {
+      "facial_expression_keywords": [
+        "미소",
+        "혼란"
+      ],
+      "gesture_keywords": [
+        "손짓",
+        "머리 흔들기"
+      ],
+      "eye_contact_style": "직접적",
+      "body_language_keywords": [
+        "편안한 자세",
+        "자연스러운 움직임"
+      ]
+    },
+    "search_keywords": [
+      "연애",
+      "고민",
+      "친근한",
+      "자연스러운",
+      "현대",
+      "실내",
+      "여성",
+      "불안",
+      "혼란"
+    ],
+    "scene_summary": "편안한 복장의 젊은 여성이 실내에서 카메라를 바라보며 연애에 대한 고민을 털어놓고 있다. 그녀는 다소 혼란스러운 감정을 표현하면서도 친근한 미소를 지어 시청자와의 교감을 시도한다. 대화의 내용은 연애의 어려움과 상대방의 좋은 점을 함께 이야기하며 감정의 깊이를 더한다.",
+    "account_id": "3",
+    "talent_media_id": "5"
+  }
+]

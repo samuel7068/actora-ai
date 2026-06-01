@@ -27,6 +27,12 @@ python-jose = "^3.5.0"
 jinja2 = "^3.1.6"
 debugpy = "^1.8.17"
 qdrant-client = "^1.12.0"
+# 영상 분석 파이프라인
+scenedetect = "^0.6.6"
+opencv-python-headless = "^4.10.0"
+numpy = "^1.26.4"
+openai = "^1.54.0"
+librosa = "^0.10.0"
 
 [build-system]
 requires = ["poetry-core"]

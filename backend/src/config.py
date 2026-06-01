@@ -34,6 +34,9 @@ class Settings(BaseSettings):
     # 비어있으면 백엔드가 직접 파일 stream (Mac dev)
     XACCEL_PREFIX: str = ""
 
+    # OpenAI (영상 분석 STT / GPT 평가)
+    OPENAI_API_KEY: str = ""
+
     # Logging
     LOGGING_LEVEL: str = "INFO"
 

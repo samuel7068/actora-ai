@@ -1,0 +1,1460 @@
+[
+  {
+    "scene_id": "scene_001",
+    "scene_start_sec": 0.0,
+    "scene_end_sec": 27.958,
+    "role": {
+      "character_name": "엄윤빈",
+      "character_type": "인물",
+      "occupation": "아나운서, 리포터",
+      "social_status": "전문직"
+    },
+    "era": {
+      "period": "",
+      "setting": "",
+      "confidence": 0.0
+    },
+    "emotion_target": {
+      "primary": [],
+      "secondary": [],
+      "emotion_flow": []
+    },
+    "scene_description": "단정한 의상을 입고 카메라를 바라보며 자신감 있게 대사를 전달하는 아나운서.",
+    "acting_analysis": {
+      "acting_style": [],
+      "emotion_delivery": "차분하고 자신감 있는",
+      "immersion_level": "높음",
+      "camera_presence": "강함",
+      "strength_keywords": [
+        "단정함",
+        "자신감",
+        "전문성"
+      ],
+      "weakness_keywords": []
+    },
+    "speech_analysis": {
+      "speech_style": [
+        "명확함",
+        "차분함"
+      ],
+      "tone_keywords": [
+        "편안함",
+        "신뢰감"
+      ],
+      "speech_speed": "중간",
+      "voice_characteristics": [
+        "부드러움",
+        "청량함"
+      ]
+    },
+    "physical_expression": {
+      "facial_expression_keywords": [
+        "미소",
+        "차분함"
+      ],
+      "gesture_keywords": [
+        "손짓",
+        "자세"
+      ],
+      "eye_contact_style": "직접적",
+      "body_language_keywords": [
+        "자세가 곧음",
+        "자신감"
+      ]
+    },
+    "search_keywords": [
+      "아나운서",
+      "리포터",
+      "전문직",
+      "신뢰감",
+      "편안한 목소리",
+      "행사 진행",
+      "나레이션"
+    ],
+    "scene_summary": "엄윤빈이 아나운서로서 다양한 경험을 소개하는 장면.",
+    "account_id": "3",
+    "talent_media_id": "3"
+  },
+  {
+    "scene_id": "scene_002",
+    "scene_start_sec": 27.958,
+    "scene_end_sec": 45.083,
+    "role": {
+      "character_name": "엄윤빈",
+      "character_type": "아나운서",
+      "occupation": "정보 전달자",
+      "social_status": "전문직"
+    },
+    "era": {
+      "period": "",
+      "setting": "방송 스튜디오",
+      "confidence": 0.9
+    },
+    "emotion_target": {
+      "primary": [
+        "신뢰",
+        "안정"
+      ],
+      "secondary": [],
+      "emotion_flow": []
+    },
+    "scene_description": "아나운서가 건강과 미래에 대한 정보를 전달하는 방송 장면.",
+    "acting_analysis": {
+      "acting_style": [
+        "자연스러움",
+        "전문적"
+      ],
+      "emotion_delivery": "신뢰감 있는 전달",
+      "immersion_level": "높음",
+      "camera_presence": "적극적",
+      "strength_keywords": [
+        "신뢰",
+        "전문성"
+      ],
+      "weakness_keywords": []
+    },
+    "speech_analysis": {
+      "speech_style": [
+        "명확함",
+        "조리있음"
+      ],
+      "tone_keywords": [
+        "부드러움",
+        "신뢰감"
+      ],
+      "speech_speed": "보통",
+      "voice_characteristics": [
+        "중저음",
+        "안정적"
+      ]
+    },
+    "physical_expression": {
+      "facial_expression_keywords": [
+        "미소",
+        "진지함"
+      ],
+      "gesture_keywords": [
+        "손짓",
+        "종이 들기"
+      ],
+      "eye_contact_style": "카메라를 바라봄",
+      "body_language_keywords": [
+        "자세가 곧음",
+        "안정적"
+      ]
+    },
+    "search_keywords": [
+      "아나운서",
+      "정보 프로그램",
+      "건강",
+      "미래",
+      "신뢰",
+      "전문직",
+      "방송",
+      "정리",
+      "전달",
+      "안녕하세요"
+    ],
+    "scene_summary": "아나운서가 건강과 미래에 대한 정보를 전달하는 방송 장면.",
+    "account_id": "3",
+    "talent_media_id": "3"
+  },
+  {
+    "scene_id": "scene_003",
+    "scene_start_sec": 45.083,
+    "scene_end_sec": 58.708,
+    "role": {
+      "character_name": "",
+      "character_type": "",
+      "occupation": "보험 전문가",
+      "social_status": ""
+    },
+    "era": {
+      "period": "",
+      "setting": "현대",
+      "confidence": 0.9
+    },
+    "emotion_target": {
+      "primary": [],
+      "secondary": [],
+      "emotion_flow": []
+    },
+    "scene_description": "보험 전문가가 유병자 보험에 대해 설명하는 장면.",
+    "acting_analysis": {
+      "acting_style": [
+        "전문적",
+        "차분함"
+      ],
+      "emotion_delivery": "중립적",
+      "immersion_level": "높음",
+      "camera_presence": "직접적",
+      "strength_keywords": [
+        "전문성",
+        "신뢰감"
+      ],
+      "weakness_keywords": []
+    },
+    "speech_analysis": {
+      "speech_style": [
+        "질문형",
+        "설명형"
+      ],
+      "tone_keywords": [
+        "차분한",
+        "신뢰감 있는"
+      ],
+      "speech_speed": "보통",
+      "voice_characteristics": [
+        "부드러운",
+        "명확한"
+      ]
+    },
+    "physical_expression": {
+      "facial_expression_keywords": [
+        "차분한",
+        "진지한"
+      ],
+      "gesture_keywords": [
+        "손짓 없음",
+        "안정된 자세"
+      ],
+      "eye_contact_style": "직접적",
+      "body_language_keywords": [
+        "자세가 안정적",
+        "긴장감 없음"
+      ]
+    },
+    "search_keywords": [
+      "유병자 보험",
+      "보험 전문가",
+      "보험 종류",
+      "고지 간단",
+      "보험 설명"
+    ],
+    "scene_summary": "보험 전문가가 유병자 보험의 간단한 고지에 대해 설명하는 장면.",
+    "account_id": "3",
+    "talent_media_id": "3"
+  },
+  {
+    "scene_id": "scene_004",
+    "scene_start_sec": 58.708,
+    "scene_end_sec": 83.042,
+    "role": {
+      "character_name": "",
+      "character_type": "인물",
+      "occupation": "보험 전문가",
+      "social_status": ""
+    },
+    "era": {
+      "period": "",
+      "setting": "현대",
+      "confidence": 0.8
+    },
+    "emotion_target": {
+      "primary": [
+        "신뢰",
+        "전문성"
+      ],
+      "secondary": [],
+      "emotion_flow": []
+    },
+    "scene_description": "보험 용어에 대해 설명하는 전문가의 모습.",
+    "acting_analysis": {
+      "acting_style": [
+        "자신감",
+        "전문적"
+      ],
+      "emotion_delivery": "차분하고 신뢰감 있는 어조",
+      "immersion_level": "높음",
+      "camera_presence": "적극적",
+      "strength_keywords": [
+        "전문성",
+        "신뢰감"
+      ],
+      "weakness_keywords": []
+    },
+    "speech_analysis": {
+      "speech_style": [
+        "설명형"
+      ],
+      "tone_keywords": [
+        "차분",
+        "신뢰감"
+      ],
+      "speech_speed": "보통",
+      "voice_characteristics": [
+        "명확함",
+        "부드러움"
+      ]
+    },
+    "physical_expression": {
+      "facial_expression_keywords": [
+        "진지함",
+        "신뢰감"
+      ],
+      "gesture_keywords": [
+        "손짓",
+        "종이 지적"
+      ],
+      "eye_contact_style": "직접",
+      "body_language_keywords": [
+        "자세가 곧음",
+        "안정감"
+      ]
+    },
+    "search_keywords": [
+      "보험",
+      "전문가",
+      "설명",
+      "신뢰",
+      "보험용어"
+    ],
+    "scene_summary": "보험 전문가가 보험 용어를 설명하는 장면.",
+    "account_id": "3",
+    "talent_media_id": "3"
+  },
+  {
+    "scene_id": "scene_005",
+    "scene_start_sec": 83.042,
+    "scene_end_sec": 87.958,
+    "role": {
+      "character_name": "엄윤빈",
+      "character_type": "아나운서",
+      "occupation": "진행자",
+      "social_status": ""
+    },
+    "era": {
+      "period": "",
+      "setting": "",
+      "confidence": 0.0
+    },
+    "emotion_target": {
+      "primary": [],
+      "secondary": [],
+      "emotion_flow": []
+    },
+    "scene_description": "아나운서가 인사혁신 우수사례 경진대회 진행을 맡고 있는 장면.",
+    "acting_analysis": {
+      "acting_style": [],
+      "emotion_delivery": "",
+      "immersion_level": "",
+      "camera_presence": "",
+      "strength_keywords": [],
+      "weakness_keywords": []
+    },
+    "speech_analysis": {
+      "speech_style": [],
+      "tone_keywords": [
+        "명확한",
+        "전문적인"
+      ],
+      "speech_speed": "6.92자/초",
+      "voice_characteristics": [
+        "중간 톤",
+        "약간의 긴장감"
+      ]
+    },
+    "physical_expression": {
+      "facial_expression_keywords": [
+        "미소",
+        "자신감"
+      ],
+      "gesture_keywords": [
+        "손에 마이크를 들고 있음"
+      ],
+      "eye_contact_style": "카메라를 바라봄",
+      "body_language_keywords": [
+        "편안한 자세",
+        "정면을 향함"
+      ]
+    },
+    "search_keywords": [
+      "아나운서",
+      "진행",
+      "경진대회",
+      "인사혁신",
+      "우수사례"
+    ],
+    "scene_summary": "아나운서 엄윤빈이 경진대회를 진행하는 모습.",
+    "account_id": "3",
+    "talent_media_id": "3"
+  },
+  {
+    "scene_id": "scene_006",
+    "scene_start_sec": 87.958,
+    "scene_end_sec": 95.0,
+    "role": {
+      "character_name": "",
+      "character_type": "",
+      "occupation": "",
+      "social_status": ""
+    },
+    "era": {
+      "period": "",
+      "setting": "",
+      "confidence": 0.0
+    },
+    "emotion_target": {
+      "primary": [],
+      "secondary": [],
+      "emotion_flow": []
+    },
+    "scene_description": "화면 속 인물이 영화권의 추위와 2024년의 마무리를 이야기하는 장면.",
+    "acting_analysis": {
+      "acting_style": [],
+      "emotion_delivery": "",
+      "immersion_level": "",
+      "camera_presence": "",
+      "strength_keywords": [],
+      "weakness_keywords": []
+    },
+    "speech_analysis": {
+      "speech_style": [],
+      "tone_keywords": [
+        "차분함",
+        "진지함"
+      ],
+      "speech_speed": "중간",
+      "voice_characteristics": [
+        "부드러움",
+        "명료함"
+      ]
+    },
+    "physical_expression": {
+      "facial_expression_keywords": [
+        "차분함",
+        "진지함"
+      ],
+      "gesture_keywords": [],
+      "eye_contact_style": "",
+      "body_language_keywords": []
+    },
+    "search_keywords": [
+      "영화",
+      "2024년",
+      "추위",
+      "마무리",
+      "대사"
+    ],
+    "scene_summary": "화면 속 인물이 2024년의 마무리를 이야기하는 장면.",
+    "account_id": "3",
+    "talent_media_id": "3"
+  },
+  {
+    "scene_id": "scene_007",
+    "scene_start_sec": 95.0,
+    "scene_end_sec": 104.708,
+    "role": {
+      "character_name": "",
+      "character_type": "인물",
+      "occupation": "진행자",
+      "social_status": ""
+    },
+    "era": {
+      "period": "",
+      "setting": "현대",
+      "confidence": 0.8
+    },
+    "emotion_target": {
+      "primary": [],
+      "secondary": [],
+      "emotion_flow": []
+    },
+    "scene_description": "진행자가 인사혁신 우수사례 경진대회를 소개하는 장면.",
+    "acting_analysis": {
+      "acting_style": [
+        "진지함",
+        "전문적"
+      ],
+      "emotion_delivery": "차분함",
+      "immersion_level": "높음",
+      "camera_presence": "강함",
+      "strength_keywords": [
+        "전문적",
+        "신뢰감"
+      ],
+      "weakness_keywords": []
+    },
+    "speech_analysis": {
+      "speech_style": [
+        "공식적"
+      ],
+      "tone_keywords": [
+        "차분한",
+        "신뢰감 있는"
+      ],
+      "speech_speed": "보통",
+      "voice_characteristics": [
+        "명확함",
+        "부드러움"
+      ]
+    },
+    "physical_expression": {
+      "facial_expression_keywords": [
+        "진지함"
+      ],
+      "gesture_keywords": [
+        "손짓"
+      ],
+      "eye_contact_style": "직접",
+      "body_language_keywords": [
+        "자신감"
+      ]
+    },
+    "search_keywords": [
+      "인사혁신",
+      "경진대회",
+      "공공부문",
+      "우수사례",
+      "진행자"
+    ],
+    "scene_summary": "진행자가 인사혁신 우수사례 경진대회를 소개하는 장면.",
+    "account_id": "3",
+    "talent_media_id": "3"
+  },
+  {
+    "scene_id": "scene_008",
+    "scene_start_sec": 104.708,
+    "scene_end_sec": 108.375,
+    "role": {
+      "character_name": "",
+      "character_type": "인물",
+      "occupation": "사회자",
+      "social_status": ""
+    },
+    "era": {
+      "period": "",
+      "setting": "현대",
+      "confidence": 0.8
+    },
+    "emotion_target": {
+      "primary": [],
+      "secondary": [],
+      "emotion_flow": []
+    },
+    "scene_description": "경진대회를 시작하는 사회자의 모습.",
+    "acting_analysis": {
+      "acting_style": [
+        "자연스러움",
+        "진지함"
+      ],
+      "emotion_delivery": "차분함",
+      "immersion_level": "중간",
+      "camera_presence": "적당함",
+      "strength_keywords": [
+        "명확한 발음",
+        "자신감"
+      ],
+      "weakness_keywords": []
+    },
+    "speech_analysis": {
+      "speech_style": [
+        "공식적"
+      ],
+      "tone_keywords": [
+        "차분함",
+        "명확함"
+      ],
+      "speech_speed": "보통",
+      "voice_characteristics": [
+        "부드러움",
+        "안정적"
+      ]
+    },
+    "physical_expression": {
+      "facial_expression_keywords": [
+        "진지함"
+      ],
+      "gesture_keywords": [
+        "손짓"
+      ],
+      "eye_contact_style": "직접",
+      "body_language_keywords": [
+        "자세가 곧음"
+      ]
+    },
+    "search_keywords": [
+      "경진대회",
+      "사회자",
+      "시작",
+      "공식",
+      "현대"
+    ],
+    "scene_summary": "사회자가 경진대회를 시작한다고 발표하는 장면.",
+    "account_id": "3",
+    "talent_media_id": "3"
+  },
+  {
+    "scene_id": "scene_009",
+    "scene_start_sec": 108.375,
+    "scene_end_sec": 111.667,
+    "role": {
+      "character_name": "",
+      "character_type": "",
+      "occupation": "",
+      "social_status": ""
+    },
+    "era": {
+      "period": "",
+      "setting": "",
+      "confidence": 0.0
+    },
+    "emotion_target": {
+      "primary": [],
+      "secondary": [],
+      "emotion_flow": []
+    },
+    "scene_description": "사무실 환경에서 인재 혁신에 대해 이야기하는 장면.",
+    "acting_analysis": {
+      "acting_style": [],
+      "emotion_delivery": "",
+      "immersion_level": "",
+      "camera_presence": "",
+      "strength_keywords": [],
+      "weakness_keywords": []
+    },
+    "speech_analysis": {
+      "speech_style": [],
+      "tone_keywords": [
+        "중립적",
+        "전문적"
+      ],
+      "speech_speed": "보통",
+      "voice_characteristics": [
+        "부드러운",
+        "차분한"
+      ]
+    },
+    "physical_expression": {
+      "facial_expression_keywords": [],
+      "gesture_keywords": [],
+      "eye_contact_style": "",
+      "body_language_keywords": []
+    },
+    "search_keywords": [
+      "인재혁신",
+      "회의",
+      "전문가",
+      "사무실",
+      "토론"
+    ],
+    "scene_summary": "인재 혁신 분야에 대한 논의가 시작되는 장면.",
+    "account_id": "3",
+    "talent_media_id": "3"
+  },
+  {
+    "scene_id": "scene_010",
+    "scene_start_sec": 111.667,
+    "scene_end_sec": 117.625,
+    "role": {
+      "character_name": "",
+      "character_type": "인물",
+      "occupation": "관계자",
+      "social_status": ""
+    },
+    "era": {
+      "period": "",
+      "setting": "",
+      "confidence": 0.0
+    },
+    "emotion_target": {
+      "primary": [],
+      "secondary": [],
+      "emotion_flow": []
+    },
+    "scene_description": "관세청, 특허청, 해양경찰청의 관계자들이 함께한 장면.",
+    "acting_analysis": {
+      "acting_style": [],
+      "emotion_delivery": "",
+      "immersion_level": "",
+      "camera_presence": "",
+      "strength_keywords": [],
+      "weakness_keywords": []
+    },
+    "speech_analysis": {
+      "speech_style": [],
+      "tone_keywords": [
+        "차분함",
+        "정중함"
+      ],
+      "speech_speed": "느림",
+      "voice_characteristics": [
+        "중간 음성",
+        "부드러운 톤"
+      ]
+    },
+    "physical_expression": {
+      "facial_expression_keywords": [
+        "미소"
+      ],
+      "gesture_keywords": [
+        "손에 서류"
+      ],
+      "eye_contact_style": "직접",
+      "body_language_keywords": [
+        "자세가 곧음"
+      ]
+    },
+    "search_keywords": [
+      "관세청",
+      "특허청",
+      "해양경찰청",
+      "관계자",
+      "회의"
+    ],
+    "scene_summary": "관세청, 특허청, 해양경찰청 관계자들이 함께한 장면.",
+    "account_id": "3",
+    "talent_media_id": "3"
+  },
+  {
+    "scene_id": "scene_011",
+    "scene_start_sec": 117.625,
+    "scene_end_sec": 119.917,
+    "role": {
+      "character_name": "",
+      "character_type": "",
+      "occupation": "",
+      "social_status": ""
+    },
+    "era": {
+      "period": "",
+      "setting": "",
+      "confidence": 0.0
+    },
+    "emotion_target": {
+      "primary": [],
+      "secondary": [],
+      "emotion_flow": []
+    },
+    "scene_description": "",
+    "acting_analysis": {
+      "acting_style": [],
+      "emotion_delivery": "",
+      "immersion_level": "",
+      "camera_presence": "",
+      "strength_keywords": [],
+      "weakness_keywords": []
+    },
+    "speech_analysis": {
+      "speech_style": [],
+      "tone_keywords": [],
+      "speech_speed": "0.0",
+      "voice_characteristics": []
+    },
+    "physical_expression": {
+      "facial_expression_keywords": [],
+      "gesture_keywords": [],
+      "eye_contact_style": "",
+      "body_language_keywords": []
+    },
+    "search_keywords": [
+      "문화",
+      "포용",
+      "의상",
+      "표정",
+      "소통"
+    ],
+    "scene_summary": "인물이 소파에 앉아 문화에 대해 이야기하는 장면.",
+    "account_id": "3",
+    "talent_media_id": "3"
+  },
+  {
+    "scene_id": "scene_012",
+    "scene_start_sec": 119.917,
+    "scene_end_sec": 124.0,
+    "role": {
+      "character_name": "",
+      "character_type": "",
+      "occupation": "",
+      "social_status": ""
+    },
+    "era": {
+      "period": "",
+      "setting": "",
+      "confidence": 0.0
+    },
+    "emotion_target": {
+      "primary": [],
+      "secondary": [],
+      "emotion_flow": []
+    },
+    "scene_description": "포용적인 문화에 대한 오해를 설명하는 장면.",
+    "acting_analysis": {
+      "acting_style": [],
+      "emotion_delivery": "",
+      "immersion_level": "",
+      "camera_presence": "",
+      "strength_keywords": [],
+      "weakness_keywords": []
+    },
+    "speech_analysis": {
+      "speech_style": [],
+      "tone_keywords": [
+        "설명적",
+        "진지함"
+      ],
+      "speech_speed": "보통",
+      "voice_characteristics": [
+        "부드러움",
+        "중간 높이"
+      ]
+    },
+    "physical_expression": {
+      "facial_expression_keywords": [
+        "진지함",
+        "설명하는 표정"
+      ],
+      "gesture_keywords": [],
+      "eye_contact_style": "",
+      "body_language_keywords": []
+    },
+    "search_keywords": [
+      "포용적 문화",
+      "오해",
+      "의견 수용",
+      "사회적 이해",
+      "문화적 차이"
+    ],
+    "scene_summary": "포용적인 문화에 대한 오해를 설명하는 장면.",
+    "account_id": "3",
+    "talent_media_id": "3"
+  },
+  {
+    "scene_id": "scene_013",
+    "scene_start_sec": 124.0,
+    "scene_end_sec": 127.375,
+    "role": {
+      "character_name": "",
+      "character_type": "실루엣",
+      "occupation": "",
+      "social_status": ""
+    },
+    "era": {
+      "period": "",
+      "setting": "",
+      "confidence": 0.0
+    },
+    "emotion_target": {
+      "primary": [],
+      "secondary": [],
+      "emotion_flow": []
+    },
+    "scene_description": "실루엣으로 보이는 인물이 마이크를 들고 있는 장면.",
+    "acting_analysis": {
+      "acting_style": [],
+      "emotion_delivery": "",
+      "immersion_level": "",
+      "camera_presence": "",
+      "strength_keywords": [],
+      "weakness_keywords": []
+    },
+    "speech_analysis": {
+      "speech_style": [],
+      "tone_keywords": [],
+      "speech_speed": "0.0",
+      "voice_characteristics": []
+    },
+    "physical_expression": {
+      "facial_expression_keywords": [],
+      "gesture_keywords": [
+        "마이크를 들고 있음"
+      ],
+      "eye_contact_style": "",
+      "body_language_keywords": []
+    },
+    "search_keywords": [
+      "실루엣",
+      "마이크",
+      "노래",
+      "무대",
+      "표현"
+    ],
+    "scene_summary": "실루엣 인물이 마이크를 들고 있는 장면.",
+    "account_id": "3",
+    "talent_media_id": "3"
+  },
+  {
+    "scene_id": "scene_014",
+    "scene_start_sec": 127.375,
+    "scene_end_sec": 131.0,
+    "role": {
+      "character_name": "",
+      "character_type": "",
+      "occupation": "",
+      "social_status": ""
+    },
+    "era": {
+      "period": "",
+      "setting": "",
+      "confidence": 0.0
+    },
+    "emotion_target": {
+      "primary": [],
+      "secondary": [],
+      "emotion_flow": []
+    },
+    "scene_description": "사람들이 컴퓨터 화면을 바라보며 대화하는 장면.",
+    "acting_analysis": {
+      "acting_style": [],
+      "emotion_delivery": "",
+      "immersion_level": "",
+      "camera_presence": "",
+      "strength_keywords": [],
+      "weakness_keywords": []
+    },
+    "speech_analysis": {
+      "speech_style": [],
+      "tone_keywords": [
+        "진지함",
+        "설득력"
+      ],
+      "speech_speed": "보통",
+      "voice_characteristics": []
+    },
+    "physical_expression": {
+      "facial_expression_keywords": [],
+      "gesture_keywords": [],
+      "eye_contact_style": "",
+      "body_language_keywords": []
+    },
+    "search_keywords": [
+      "포용",
+      "문화",
+      "편견",
+      "존중",
+      "대화",
+      "사람들",
+      "컴퓨터",
+      "협력"
+    ],
+    "scene_summary": "사람들이 포용적인 문화에 대해 이야기하는 장면.",
+    "account_id": "3",
+    "talent_media_id": "3"
+  },
+  {
+    "scene_id": "scene_015",
+    "scene_start_sec": 131.0,
+    "scene_end_sec": 136.875,
+    "role": {
+      "character_name": "",
+      "character_type": "",
+      "occupation": "",
+      "social_status": ""
+    },
+    "era": {
+      "period": "",
+      "setting": "",
+      "confidence": 0.0
+    },
+    "emotion_target": {
+      "primary": [],
+      "secondary": [],
+      "emotion_flow": []
+    },
+    "scene_description": "회의에서 의견을 내지 못하는 상황을 다룬 장면.",
+    "acting_analysis": {
+      "acting_style": [],
+      "emotion_delivery": "",
+      "immersion_level": "",
+      "camera_presence": "",
+      "strength_keywords": [],
+      "weakness_keywords": []
+    },
+    "speech_analysis": {
+      "speech_style": [],
+      "tone_keywords": [
+        "신중함",
+        "우려"
+      ],
+      "speech_speed": "느림",
+      "voice_characteristics": []
+    },
+    "physical_expression": {
+      "facial_expression_keywords": [],
+      "gesture_keywords": [],
+      "eye_contact_style": "",
+      "body_language_keywords": []
+    },
+    "search_keywords": [
+      "회의",
+      "의견",
+      "신중함",
+      "소통",
+      "우려",
+      "표정",
+      "상황",
+      "소극적"
+    ],
+    "scene_summary": "회의에서 의견을 내지 못하는 사람의 심리를 표현한 장면.",
+    "account_id": "3",
+    "talent_media_id": "3"
+  },
+  {
+    "scene_id": "scene_016",
+    "scene_start_sec": 136.875,
+    "scene_end_sec": 139.167,
+    "role": {
+      "character_name": "",
+      "character_type": "발표자",
+      "occupation": "연설가",
+      "social_status": ""
+    },
+    "era": {
+      "period": "",
+      "setting": "컨퍼런스",
+      "confidence": 0.0
+    },
+    "emotion_target": {
+      "primary": [],
+      "secondary": [],
+      "emotion_flow": []
+    },
+    "scene_description": "발표자가 무대에서 청중을 바라보며 발표를 준비하는 모습.",
+    "acting_analysis": {
+      "acting_style": [],
+      "emotion_delivery": "",
+      "immersion_level": "",
+      "camera_presence": "",
+      "strength_keywords": [],
+      "weakness_keywords": []
+    },
+    "speech_analysis": {
+      "speech_style": [],
+      "tone_keywords": [],
+      "speech_speed": "0.0",
+      "voice_characteristics": []
+    },
+    "physical_expression": {
+      "facial_expression_keywords": [],
+      "gesture_keywords": [],
+      "eye_contact_style": "",
+      "body_language_keywords": []
+    },
+    "search_keywords": [
+      "발표",
+      "컨퍼런스",
+      "연설",
+      "무대",
+      "청중"
+    ],
+    "scene_summary": "발표자가 무대에서 발표를 준비하는 장면.",
+    "account_id": "3",
+    "talent_media_id": "3"
+  },
+  {
+    "scene_id": "scene_017",
+    "scene_start_sec": 139.167,
+    "scene_end_sec": 141.333,
+    "role": {
+      "character_name": "",
+      "character_type": "인물",
+      "occupation": "연설자",
+      "social_status": ""
+    },
+    "era": {
+      "period": "",
+      "setting": "국제회의",
+      "confidence": 0.0
+    },
+    "emotion_target": {
+      "primary": [],
+      "secondary": [],
+      "emotion_flow": []
+    },
+    "scene_description": "국제회의에서 연설하는 인물.",
+    "acting_analysis": {
+      "acting_style": [],
+      "emotion_delivery": "",
+      "immersion_level": "",
+      "camera_presence": "",
+      "strength_keywords": [],
+      "weakness_keywords": []
+    },
+    "speech_analysis": {
+      "speech_style": [],
+      "tone_keywords": [
+        "진지함",
+        "전문적"
+      ],
+      "speech_speed": "보통",
+      "voice_characteristics": [
+        "부드러움",
+        "명확함"
+      ]
+    },
+    "physical_expression": {
+      "facial_expression_keywords": [
+        "진지함"
+      ],
+      "gesture_keywords": [
+        "손짓"
+      ],
+      "eye_contact_style": "청중을 바라봄",
+      "body_language_keywords": [
+        "자신감"
+      ]
+    },
+    "search_keywords": [
+      "국제회의",
+      "연설",
+      "대한민국",
+      "마이스",
+      "전문가"
+    ],
+    "scene_summary": "대한민국의 마이스 어페이에 대한 연설 장면.",
+    "account_id": "3",
+    "talent_media_id": "3"
+  },
+  {
+    "scene_id": "scene_018",
+    "scene_start_sec": 141.333,
+    "scene_end_sec": 142.417,
+    "role": {
+      "character_name": "",
+      "character_type": "인물",
+      "occupation": "노동자",
+      "social_status": "일반인"
+    },
+    "era": {
+      "period": "",
+      "setting": "현대",
+      "confidence": 0.8
+    },
+    "emotion_target": {
+      "primary": [],
+      "secondary": [],
+      "emotion_flow": []
+    },
+    "scene_description": "무대에서 작업복을 입은 노동자들이 활동하는 장면.",
+    "acting_analysis": {
+      "acting_style": [],
+      "emotion_delivery": "",
+      "immersion_level": "중간",
+      "camera_presence": "적당함",
+      "strength_keywords": [],
+      "weakness_keywords": []
+    },
+    "speech_analysis": {
+      "speech_style": [],
+      "tone_keywords": [],
+      "speech_speed": "0.0",
+      "voice_characteristics": []
+    },
+    "physical_expression": {
+      "facial_expression_keywords": [],
+      "gesture_keywords": [
+        "작업",
+        "이동"
+      ],
+      "eye_contact_style": "",
+      "body_language_keywords": [
+        "활동적",
+        "협동"
+      ]
+    },
+    "search_keywords": [
+      "노동자",
+      "무대",
+      "작업복",
+      "현대",
+      "활동",
+      "협동",
+      "공연",
+      "일상"
+    ],
+    "scene_summary": "무대에서 작업복을 입은 노동자들이 활동하는 모습.",
+    "account_id": "3",
+    "talent_media_id": "3"
+  },
+  {
+    "scene_id": "scene_019",
+    "scene_start_sec": 142.417,
+    "scene_end_sec": 143.25,
+    "role": {
+      "character_name": "",
+      "character_type": "인물",
+      "occupation": "연주자",
+      "social_status": ""
+    },
+    "era": {
+      "period": "",
+      "setting": "",
+      "confidence": 0.0
+    },
+    "emotion_target": {
+      "primary": [],
+      "secondary": [],
+      "emotion_flow": []
+    },
+    "scene_description": "연주자가 드럼을 치며 공연 중인 장면.",
+    "acting_analysis": {
+      "acting_style": [],
+      "emotion_delivery": "",
+      "immersion_level": "",
+      "camera_presence": "",
+      "strength_keywords": [],
+      "weakness_keywords": []
+    },
+    "speech_analysis": {
+      "speech_style": [],
+      "tone_keywords": [],
+      "speech_speed": "0.0",
+      "voice_characteristics": []
+    },
+    "physical_expression": {
+      "facial_expression_keywords": [],
+      "gesture_keywords": [
+        "드럼 연주",
+        "손 동작"
+      ],
+      "eye_contact_style": "",
+      "body_language_keywords": [
+        "활동적",
+        "에너지 넘침"
+      ]
+    },
+    "search_keywords": [
+      "연주",
+      "드럼",
+      "공연",
+      "음악",
+      "활동적"
+    ],
+    "scene_summary": "연주자가 드럼을 치며 공연하는 짧은 장면.",
+    "account_id": "3",
+    "talent_media_id": "3"
+  },
+  {
+    "scene_id": "scene_020",
+    "scene_start_sec": 143.25,
+    "scene_end_sec": 144.417,
+    "role": {
+      "character_name": "",
+      "character_type": "인물",
+      "occupation": "작업자",
+      "social_status": ""
+    },
+    "era": {
+      "period": "",
+      "setting": "현대",
+      "confidence": 0.0
+    },
+    "emotion_target": {
+      "primary": [],
+      "secondary": [],
+      "emotion_flow": []
+    },
+    "scene_description": "작업복을 입은 인물이 무언가를 들고 있는 모습.",
+    "acting_analysis": {
+      "acting_style": [],
+      "emotion_delivery": "",
+      "immersion_level": "",
+      "camera_presence": "",
+      "strength_keywords": [],
+      "weakness_keywords": []
+    },
+    "speech_analysis": {
+      "speech_style": [],
+      "tone_keywords": [],
+      "speech_speed": "0.0",
+      "voice_characteristics": []
+    },
+    "physical_expression": {
+      "facial_expression_keywords": [],
+      "gesture_keywords": [
+        "물건을 들고 있음"
+      ],
+      "eye_contact_style": "",
+      "body_language_keywords": [
+        "자세가 똑바로 서 있음"
+      ]
+    },
+    "search_keywords": [
+      "작업자",
+      "현대",
+      "무대",
+      "활동",
+      "행사"
+    ],
+    "scene_summary": "작업복을 입은 인물이 무대에서 물건을 들고 있는 장면.",
+    "account_id": "3",
+    "talent_media_id": "3"
+  },
+  {
+    "scene_id": "scene_021",
+    "scene_start_sec": 144.417,
+    "scene_end_sec": 146.292,
+    "role": {
+      "character_name": "",
+      "character_type": "",
+      "occupation": "발표자",
+      "social_status": ""
+    },
+    "era": {
+      "period": "",
+      "setting": "현대",
+      "confidence": 0.8
+    },
+    "emotion_target": {
+      "primary": [],
+      "secondary": [],
+      "emotion_flow": []
+    },
+    "scene_description": "발표자가 울산 국제회의지구에 대해 소개하는 장면.",
+    "acting_analysis": {
+      "acting_style": [],
+      "emotion_delivery": "차분함",
+      "immersion_level": "중간",
+      "camera_presence": "있음",
+      "strength_keywords": [
+        "자신감",
+        "명확함"
+      ],
+      "weakness_keywords": []
+    },
+    "speech_analysis": {
+      "speech_style": [
+        "공식적"
+      ],
+      "tone_keywords": [
+        "차분한",
+        "명확한"
+      ],
+      "speech_speed": "중간",
+      "voice_characteristics": [
+        "부드러운",
+        "안정적인"
+      ]
+    },
+    "physical_expression": {
+      "facial_expression_keywords": [
+        "차분함",
+        "진지함"
+      ],
+      "gesture_keywords": [
+        "손짓",
+        "지시"
+      ],
+      "eye_contact_style": "청중을 바라봄",
+      "body_language_keywords": [
+        "자세가 바름",
+        "안정적"
+      ]
+    },
+    "search_keywords": [
+      "울산",
+      "국제회의",
+      "발표",
+      "현대",
+      "차분함",
+      "자신감"
+    ],
+    "scene_summary": "발표자가 울산 국제회의지구를 소개하는 장면.",
+    "account_id": "3",
+    "talent_media_id": "3"
+  },
+  {
+    "scene_id": "scene_022",
+    "scene_start_sec": 146.292,
+    "scene_end_sec": 147.333,
+    "role": {
+      "character_name": "",
+      "character_type": "",
+      "occupation": "",
+      "social_status": ""
+    },
+    "era": {
+      "period": "",
+      "setting": "",
+      "confidence": 0.0
+    },
+    "emotion_target": {
+      "primary": [],
+      "secondary": [],
+      "emotion_flow": []
+    },
+    "scene_description": "다양한 국기의 깃발이 펄럭이는 현대적인 건물 외관.",
+    "acting_analysis": {
+      "acting_style": [],
+      "emotion_delivery": "",
+      "immersion_level": "",
+      "camera_presence": "",
+      "strength_keywords": [],
+      "weakness_keywords": []
+    },
+    "speech_analysis": {
+      "speech_style": [],
+      "tone_keywords": [],
+      "speech_speed": "0.0",
+      "voice_characteristics": []
+    },
+    "physical_expression": {
+      "facial_expression_keywords": [],
+      "gesture_keywords": [],
+      "eye_contact_style": "",
+      "body_language_keywords": []
+    },
+    "search_keywords": [
+      "국기",
+      "현대건축",
+      "건물",
+      "다양성",
+      "국제"
+    ],
+    "scene_summary": "국제적인 분위기의 현대적인 건물과 다양한 국기가 보이는 장면.",
+    "account_id": "3",
+    "talent_media_id": "3"
+  },
+  {
+    "scene_id": "scene_023",
+    "scene_start_sec": 147.333,
+    "scene_end_sec": 148.667,
+    "role": {
+      "character_name": "",
+      "character_type": "",
+      "occupation": "",
+      "social_status": ""
+    },
+    "era": {
+      "period": "",
+      "setting": "",
+      "confidence": 0.0
+    },
+    "emotion_target": {
+      "primary": [],
+      "secondary": [],
+      "emotion_flow": []
+    },
+    "scene_description": "현대적인 건물과 넓은 도로가 보이는 장면.",
+    "acting_analysis": {
+      "acting_style": [],
+      "emotion_delivery": "",
+      "immersion_level": "",
+      "camera_presence": "",
+      "strength_keywords": [],
+      "weakness_keywords": []
+    },
+    "speech_analysis": {
+      "speech_style": [],
+      "tone_keywords": [],
+      "speech_speed": "0.0",
+      "voice_characteristics": []
+    },
+    "physical_expression": {
+      "facial_expression_keywords": [],
+      "gesture_keywords": [],
+      "eye_contact_style": "",
+      "body_language_keywords": []
+    },
+    "search_keywords": [
+      "현대건축",
+      "도시풍경",
+      "건물",
+      "도로",
+      "풍경"
+    ],
+    "scene_summary": "현대적인 건물과 도로가 있는 풍경을 보여주는 장면.",
+    "account_id": "3",
+    "talent_media_id": "3"
+  }
+]
