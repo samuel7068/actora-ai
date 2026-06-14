@@ -392,6 +392,7 @@ async def analyze_debug(
                             stt_segments=stt_segments,
                             audio_features=audio_features_by_scene.get(sc["scene_id"]),
                             openai_api_key=config.OPENAI_API_KEY,
+                            main_category=talent.main_category,
                         )
                         rag_scenes.append(scene_json)
                     except Exception as e:

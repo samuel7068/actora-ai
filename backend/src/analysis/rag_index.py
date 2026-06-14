@@ -35,11 +35,12 @@ def _scene_embed_text(scene: dict[str, Any]) -> str:
     summary = scene.get("scene_summary")
     if isinstance(summary, str) and summary.strip():
         parts.append(summary.strip())
-    keywords = scene.get("search_keywords")
-    if isinstance(keywords, list):
-        kw = " ".join(str(k) for k in keywords if k)
-        if kw.strip():
-            parts.append(kw.strip())
+    for key in ("search_keywords", "mood_keywords"):
+        kws = scene.get(key)
+        if isinstance(kws, list):
+            kw = " ".join(str(k) for k in kws if k)
+            if kw.strip():
+                parts.append(kw.strip())
     return " ".join(parts).strip()
 
 
@@ -57,6 +58,7 @@ def _scene_payload(
         "scene_start_sec": scene.get("scene_start_sec"),
         "scene_end_sec": scene.get("scene_end_sec"),
         "search_keywords": scene.get("search_keywords") or [],
+        "mood_keywords": scene.get("mood_keywords") or [],
         "age_range": role.get("age_range"),
         "gender_appearance": role.get("gender_appearance"),
         "character_type": role.get("character_type"),

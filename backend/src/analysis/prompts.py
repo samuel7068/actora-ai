@@ -4,7 +4,7 @@
 
 사용:
     from src.analysis.prompts import get_prompt
-    p = get_prompt("scene_analysis", file="portfolio_video_analysis.toml")
+    p = get_prompt("scene_analysis", file="portfolio_video_analysis_actor.toml")
     system = p["system"]
     user_msg = p["user_template"].format(scene_id="...", ...)
     model = p.get("model", "gpt-4o-mini")

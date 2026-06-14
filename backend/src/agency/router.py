@@ -20,6 +20,11 @@ logger = logging.getLogger(__name__)
 
 agency_router = APIRouter()
 
+# 검색 필수 필터 — 주 분야 화이트리스트 (talent_master.main_category 와 동일)
+_MAIN_CATEGORIES = {
+    "ACTOR", "MODEL", "INFLUENCER", "VOCAL", "DANCER", "MC", "CREATOR",
+}
+
 
 def _calc_age(birth: date | None) -> int | None:
     if not birth:
@@ -98,78 +103,107 @@ def _has_any_condition(cond: dict) -> bool:
 
 @agency_router.get("/search")
 async def search_talents(
-    q: str = Query(..., min_length=1, description="자연어 검색 문장"),
+    q: str = Query(..., min_length=1, description="자연어 검색 문장 (이미지·분위기)"),
+    main_category: str = Query(
+        ..., description="주 분야 (필수). ACTOR/MODEL/INFLUENCER/VOCAL/DANCER/MC/CREATOR"
+    ),
+    gender: str = Query(..., description="성별 (필수). MALE / FEMALE"),
     limit: int = Query(20, ge=1, le=50),
     current=Depends(get_current_account),
     db: AsyncSession = Depends(get_db),
 ):
-    """하이브리드 검색 (LLM 파싱 기반).
+    """하이브리드 검색.
 
-    1) LLM 이 검색 문장에서 talent_master 조건(나이·성별·키·몸무게·특기·언어) 추출
-    2) DB 1차 필터 → 조건 충족 account_id 후보
-    3) 검색 문장 전체로 RAG 2차 벡터 검색 (후보 account 로 한정, 유사도 컷오프)
+    1) 주 분야 + 성별 (필수) + LLM 추출 조건(나이·키·몸무게·특기·언어)으로 DB 1차 필터 → 후보 account_id
+    2) 후보 account 로 한정해 검색 문장 전체로 RAG 2차 벡터 검색
     AGENCY / ADMIN 만 접근.
     """
     account, _admin = current
     if account.account_type not in ("AGENCY", "ADMIN"):
         raise HTTPException(status_code=403, detail="AGENCY_OR_ADMIN_ONLY")
+    if main_category not in _MAIN_CATEGORIES:
+        raise HTTPException(status_code=400, detail="INVALID_MAIN_CATEGORY")
+    if gender not in ("MALE", "FEMALE"):
+        raise HTTPException(status_code=400, detail="INVALID_GENDER")
 
     config = get_settings()
 
-    # ── 1) LLM 파싱 ──
+    # ── 1) LLM 파싱 (나이·키·몸무게·특기·언어). 성별은 명시 선택이 우선이라 무시 ──
     cond = await asyncio.to_thread(parse_search_query, q, config.OPENAI_API_KEY)
-    has_cond = _has_any_condition(cond)
+    cond["gender"] = None  # 명시 성별 필터가 authoritative
 
-    # ── 2) DB 1차 필터 → 후보 account_id + 프로필 ──
+    # ── 2) DB 1차 필터: 주 분야 + 성별(필수) + LLM 조건 → 후보 account_id + 프로필 ──
     profiles: dict[int, dict] = {}
-    candidate_ids: set[int] | None = None
-    if has_cond:
-        rows = (
-            await db.execute(
-                select(
-                    AccountMaster.account_id,
-                    AccountMaster.name,
-                    TalentMaster.birth_date,
-                    TalentMaster.gender,
-                    TalentMaster.height_cm,
-                    TalentMaster.weight_kg,
-                    TalentMaster.skills,
-                    TalentMaster.languages,
-                ).join(TalentMaster, AccountMaster.account_id == TalentMaster.account_id)
+    rows = (
+        await db.execute(
+            select(
+                AccountMaster.account_id,
+                AccountMaster.name,
+                TalentMaster.birth_date,
+                TalentMaster.gender,
+                TalentMaster.height_cm,
+                TalentMaster.weight_kg,
+                TalentMaster.skills,
+                TalentMaster.languages,
             )
-        ).all()
-        candidate_ids = set()
-        for row in rows:
-            prof = _profile_dict(*row)
-            if _passes_db_filter(prof, cond):
-                profiles[prof["account_id"]] = prof
-                candidate_ids.add(prof["account_id"])
+            .join(TalentMaster, AccountMaster.account_id == TalentMaster.account_id)
+            .where(
+                TalentMaster.main_category == main_category,
+                TalentMaster.gender == gender,
+            )
+        )
+    ).all()
+    candidate_ids: set[int] = set()
+    for row in rows:
+        prof = _profile_dict(*row)
+        if _passes_db_filter(prof, cond):
+            profiles[prof["account_id"]] = prof
+            candidate_ids.add(prof["account_id"])
 
-        # 조건 충족자가 없으면 RAG 돌릴 필요 없음
-        if not candidate_ids:
-            return {"query": q, "conditions": cond, "count": 0, "results": []}
+    # 후보가 없으면 RAG 돌릴 필요 없음
+    if not candidate_ids:
+        return {
+            "query": q,
+            "conditions": cond,
+            "main_category": main_category,
+            "gender": gender,
+            "count": 0,
+            "results": [],
+        }
 
     # ── 3) RAG 2차 (후보 account 로 한정) ──
-    qfilter = None
-    if candidate_ids is not None:
-        qfilter = models.Filter(
-            must=[
-                models.FieldCondition(
-                    key="account_id",
-                    match=models.MatchAny(any=list(candidate_ids)),
-                )
-            ]
-        )
+    qfilter = models.Filter(
+        must=[
+            models.FieldCondition(
+                key="account_id",
+                match=models.MatchAny(any=list(candidate_ids)),
+            )
+        ]
+    )
 
     # 벡터 검색은 검색 문장 전체로. (의미 단어만 떼면 "수다스런" 같은 단어는 임베딩이
     #  빈약해져 유사도가 불안정 — 전체 문장이 맥락이 풍부해 더 안정적.)
-    # 유사도 컷오프는 일단 제거 — 데이터가 적어 튜닝 의미가 적으므로 전부 노출.
+    # scene 단위라 한 인재가 여러 건 나올 수 있으므로 넉넉히 받아 dedup 후 trim.
     raw = await search_scenes(
         q,
-        limit=limit,
+        limit=limit * 5,
         openai_api_key=config.OPENAI_API_KEY,
         query_filter=qfilter,
     )
+
+    # ── 인재(account) 단위 중복 제거 — 같은 인재의 여러 scene 중 최고 점수 1건만 ──
+    # raw 는 유사도 내림차순이므로 먼저 만난 account 가 그 인재의 최고 점수 scene.
+    seen: set[int] = set()
+    deduped: list[dict] = []
+    for r in raw:
+        aid = _to_int((r.get("payload") or {}).get("account_id"))
+        if aid is None or aid in seen:
+            continue
+        seen.add(aid)
+        deduped.append(r)
+        if len(deduped) >= limit:
+            break
+    raw = deduped
 
     # ── 프로필 병합 (조건 없던 경우 여기서 조회) ──
     missing = {
@@ -203,7 +237,14 @@ async def search_talents(
         aid = _to_int((r.get("payload") or {}).get("account_id"))
         r["profile"] = profiles.get(aid)
 
-    return {"query": q, "conditions": cond, "count": len(raw), "results": raw}
+    return {
+        "query": q,
+        "conditions": cond,
+        "main_category": main_category,
+        "gender": gender,
+        "count": len(raw),
+        "results": raw,
+    }
 
 
 @agency_router.get("/talent/{account_id}")

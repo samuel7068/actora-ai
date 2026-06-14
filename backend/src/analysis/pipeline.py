@@ -308,6 +308,25 @@ def extract_audio_features_per_scene(
     return results
 
 
+# 인재 카테고리(main_category) → scene_analysis 프롬프트 파일 매핑.
+# 카테고리마다 분석 관점이 달라 프롬프트를 분리한다. 미설정/미지원이면 연기자(actor)로 fallback.
+_PROMPT_FILE_BY_CATEGORY = {
+    "ACTOR": "portfolio_video_analysis_actor.toml",
+    "MODEL": "portfolio_video_analysis_model.toml",
+    "INFLUENCER": "portfolio_video_analysis_influencer.toml",
+    "VOCAL": "portfolio_video_analysis_vocal.toml",
+    "DANCER": "portfolio_video_analysis_dancer.toml",
+    "MC": "portfolio_video_analysis_mc.toml",
+    "CREATOR": "portfolio_video_analysis_creator.toml",
+}
+_DEFAULT_PROMPT_FILE = "portfolio_video_analysis_actor.toml"  # fallback = 연기자
+
+
+def _prompt_file_for_category(main_category: str | None) -> str:
+    """main_category(예: 'MC')에 맞는 프롬프트 파일명 반환. 없으면 연기자 디폴트."""
+    return _PROMPT_FILE_BY_CATEGORY.get((main_category or "").upper(), _DEFAULT_PROMPT_FILE)
+
+
 def analyze_scene_with_gpt(
     *,
     account_id: int,
@@ -317,10 +336,12 @@ def analyze_scene_with_gpt(
     stt_segments: list[dict[str, Any]] | None,
     audio_features: dict[str, Any] | None,
     openai_api_key: str,
+    main_category: str | None = None,
 ) -> dict[str, Any]:
     """GPT-4 Vision 으로 scene JSON 산출 (단계 6).
 
-    프롬프트는 backend/prompts/portfolio_video_analysis.toml 의 [scene_analysis] 에서 로드.
+    프롬프트는 인재의 main_category 에 맞는 backend/prompts/portfolio_video_analysis_*.toml 의
+    [scene_analysis] 에서 로드 (미설정 시 연기자 프롬프트로 fallback).
     입력: keyframe(base64) + scene 시간 + STT 텍스트 + 음성 특징
     출력: RAG 용 scene JSON
     """
@@ -331,7 +352,7 @@ def analyze_scene_with_gpt(
     from src.analysis.prompts import get_prompt
     client = OpenAI(api_key=openai_api_key)
 
-    prompt = get_prompt("scene_analysis", file="portfolio_video_analysis.toml")
+    prompt = get_prompt("scene_analysis", file=_prompt_file_for_category(main_category))
 
     # scene 에 해당하는 STT 텍스트만 합치기
     start, end = float(scene["start_sec"]), float(scene["end_sec"])

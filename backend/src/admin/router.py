@@ -1,29 +1,33 @@
 """관리자 전용 API (account_type='ADMIN' 만 접근)."""
 import logging
 import os
+import shutil
 import uuid
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Optional
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.account.models import AccountMaster
-from src.analysis.rag_index import get_media_scenes
+from src.analysis.rag_index import delete_media_points, get_media_scenes
 from src.auth.deps import get_current_account
 from src.database import get_db
-from src.media.service import absolute_path
+from src.media.service import absolute_path, stream_url_for
 from src.talent.models import TalentMaster, TalentMedia
 from src.talent.router import (
     _MAX_PROFILE_PHOTO_BYTES,
     _PROFILE_PHOTO_MIME,
+    _completion_rate,
     _profile_public_url,
     _profile_relative_key,
+    _to_response,
 )
+from src.talent.schemas import TalentProfileResponse, TalentProfileUpdateRequest
 
 logger = logging.getLogger(__name__)
 
@@ -31,25 +35,14 @@ admin_router = APIRouter()
 
 
 class AdminTalentCreate(BaseModel):
-    """관리자 대행 인재 등록 입력.
+    """관리자 대행 인재 등록 입력 — 이름만.
 
-    계정 식별자(login_id/email/password)는 받지 않는다 — 본인이 아직 없는
-    시드 데이터이므로 시스템이 placeholder 로 자동 생성하고, 로그인은 불가 상태로 둔다.
-    (추후 본인이 실제 가입할 때 이 레코드를 클레임/연결)
+    계정 식별자(login_id/email/password)는 받지 않는다 — 시드 데이터이므로
+    시스템이 placeholder 로 자동 생성하고 로그인 불가 상태로 둔다.
+    상세 프로필은 생성 후 연기자와 동일한 프로필 편집 화면(탭)에서 입력한다.
     """
 
     name: str
-    # 프로필 (talent_master)
-    stage_name: Optional[str] = None
-    gender: Optional[str] = None          # MALE / FEMALE / SELF_DESCRIBED
-    birth_date: Optional[date] = None
-    height_cm: Optional[int] = None
-    weight_kg: Optional[int] = None
-    region_code: Optional[str] = None
-    main_category: Optional[str] = None   # ACTOR / MODEL / ...
-    skills: list[str] = []
-    languages: list[str] = []
-    introduction: Optional[str] = None
 
 
 def _calc_age(birth: date | None) -> int | None:
@@ -156,6 +149,7 @@ async def list_talents(
                 AccountMaster.account_id,
                 AccountMaster.name,
                 AccountMaster.created_at,
+                TalentMaster.stage_name,
                 TalentMaster.gender,
                 TalentMaster.birth_date,
                 TalentMaster.height_cm,
@@ -164,24 +158,44 @@ async def list_talents(
                 TalentMaster.main_category,
                 TalentMaster.skills,
                 TalentMaster.languages,
+                TalentMaster.career_level,
+                TalentMaster.career_years,
+                TalentMaster.profile_completion_rate,
             )
             .join(TalentMaster, AccountMaster.account_id == TalentMaster.account_id)
             .order_by(AccountMaster.account_id.desc())
         )
     ).all()
+
+    # 인재별 영상 개수 (talent_media count) — 별도 집계 후 병합
+    count_rows = (
+        await db.execute(
+            select(
+                TalentMedia.account_id,
+                func.count(TalentMedia.talent_media_id),
+            ).group_by(TalentMedia.account_id)
+        )
+    ).all()
+    media_counts = {acc_id: cnt for acc_id, cnt in count_rows}
+
     items = [
         {
             "account_id": r[0],
             "name": r[1],
             "created_at": r[2],
-            "gender": r[3],
-            "age": _calc_age(r[4]),
-            "height_cm": r[5],
-            "weight_kg": r[6],
-            "region_code": r[7],
-            "main_category": r[8],
-            "skills": r[9] or [],
-            "languages": r[10] or [],
+            "stage_name": r[3],
+            "gender": r[4],
+            "age": _calc_age(r[5]),
+            "height_cm": r[6],
+            "weight_kg": r[7],
+            "region_code": r[8],
+            "main_category": r[9],
+            "skills": r[10] or [],
+            "languages": r[11] or [],
+            "career_level": r[12],
+            "career_years": r[13],
+            "profile_completion_rate": r[14],
+            "media_count": media_counts.get(r[0], 0),
         }
         for r in rows
     ]
@@ -215,103 +229,203 @@ async def create_talent(
         await db.rollback()
         raise HTTPException(status_code=409, detail="SEED_ACCOUNT_CONFLICT")
 
-    talent = TalentMaster(
-        account_id=acc.account_id,
-        stage_name=req.stage_name,
-        gender=req.gender,
-        birth_date=req.birth_date,
-        height_cm=req.height_cm,
-        weight_kg=req.weight_kg,
-        region_code=req.region_code,
-        main_category=req.main_category,
-        skills=req.skills or None,
-        languages=req.languages or None,
-        introduction=req.introduction,
-    )
+    talent = TalentMaster(account_id=acc.account_id)
     db.add(talent)
     await db.commit()
 
     return {"account_id": acc.account_id, "name": req.name}
 
 
-@admin_router.get("/talents/{account_id}")
+@admin_router.get("/talents/{account_id}", response_model=TalentProfileResponse)
 async def get_talent_for_edit(
     account_id: int,
     current=Depends(get_current_account),
     db: AsyncSession = Depends(get_db),
 ):
-    """인재 수정 화면용 전체 프로필 (birth_date 포함)."""
+    """인재 수정 화면용 전체 프로필 — 연기자 GET /talent/profile 과 동일 구조."""
     account, _admin = current
     if account.account_type != "ADMIN":
         raise HTTPException(status_code=403, detail="ADMIN_ONLY")
 
-    res = (
-        await db.execute(
-            select(AccountMaster.name, TalentMaster)
-            .join(TalentMaster, AccountMaster.account_id == TalentMaster.account_id)
-            .where(AccountMaster.account_id == account_id)
-        )
-    ).first()
-    if not res:
-        raise HTTPException(status_code=404, detail="TALENT_NOT_FOUND")
-
-    name, t = res
-    return {
-        "account_id": account_id,
-        "name": name,
-        "stage_name": t.stage_name,
-        "gender": t.gender,
-        "birth_date": t.birth_date.isoformat() if t.birth_date else None,
-        "height_cm": t.height_cm,
-        "weight_kg": t.weight_kg,
-        "region_code": t.region_code,
-        "main_category": t.main_category,
-        "skills": t.skills or [],
-        "languages": t.languages or [],
-        "introduction": t.introduction,
-        "profile_image_urls": t.profile_image_urls or [],
-    }
-
-
-@admin_router.put("/talents/{account_id}")
-async def update_talent(
-    account_id: int,
-    req: AdminTalentCreate,
-    current=Depends(get_current_account),
-    db: AsyncSession = Depends(get_db),
-):
-    """인재 프로필 수정 (이름 + talent_master 전체)."""
-    account, _admin = current
-    if account.account_type != "ADMIN":
-        raise HTTPException(status_code=403, detail="ADMIN_ONLY")
-
-    acc = (
-        await db.execute(
-            select(AccountMaster).where(AccountMaster.account_id == account_id)
-        )
-    ).scalar_one_or_none()
     talent = (
         await db.execute(
             select(TalentMaster).where(TalentMaster.account_id == account_id)
         )
     ).scalar_one_or_none()
-    if not acc or not talent:
+    if talent is None:
+        raise HTTPException(status_code=404, detail="TALENT_NOT_FOUND")
+    return _to_response(talent)
+
+
+@admin_router.put("/talents/{account_id}", response_model=TalentProfileResponse)
+async def update_talent(
+    account_id: int,
+    req: TalentProfileUpdateRequest,
+    current=Depends(get_current_account),
+    db: AsyncSession = Depends(get_db),
+):
+    """인재 프로필 수정 — 연기자 PUT /talent/profile 과 동일 구조."""
+    account, _admin = current
+    if account.account_type != "ADMIN":
+        raise HTTPException(status_code=403, detail="ADMIN_ONLY")
+
+    talent = (
+        await db.execute(
+            select(TalentMaster).where(TalentMaster.account_id == account_id)
+        )
+    ).scalar_one_or_none()
+    if talent is None:
         raise HTTPException(status_code=404, detail="TALENT_NOT_FOUND")
 
-    acc.name = req.name
-    talent.stage_name = req.stage_name
-    talent.gender = req.gender
-    talent.birth_date = req.birth_date
-    talent.height_cm = req.height_cm
-    talent.weight_kg = req.weight_kg
-    talent.region_code = req.region_code
-    talent.main_category = req.main_category
-    talent.skills = req.skills or None
-    talent.languages = req.languages or None
-    talent.introduction = req.introduction
+    data = req.model_dump(exclude_unset=False)
+    for field, value in data.items():
+        setattr(talent, field, value)
+    talent.profile_completion_rate = _completion_rate(talent)
+    talent.updated_at = datetime.now(timezone.utc)
     await db.commit()
+    await db.refresh(talent)
+    return _to_response(talent)
 
-    return {"account_id": account_id, "name": req.name}
+
+@admin_router.get("/talents/{account_id}/media")
+async def list_talent_media(
+    account_id: int,
+    current=Depends(get_current_account),
+    db: AsyncSession = Depends(get_db),
+):
+    """특정 인재의 영상 목록 (관리자 포트폴리오). 본인 /talent/me/media 와 같은 형태."""
+    account, _admin = current
+    if account.account_type != "ADMIN":
+        raise HTTPException(status_code=403, detail="ADMIN_ONLY")
+
+    rows = (
+        await db.execute(
+            select(TalentMedia)
+            .where(TalentMedia.account_id == account_id)
+            .order_by(TalentMedia.sort_order.asc(), TalentMedia.talent_media_id.asc())
+        )
+    ).scalars().all()
+    items = [
+        {
+            "talent_media_id": r.talent_media_id,
+            "media_type": r.media_type,
+            "title": r.title,
+            "original_file_name": r.original_file_name,
+            "ai_summary": r.ai_summary,
+            "created_at": r.created_at,
+            "view_count": r.view_count,
+            "is_main": r.is_main,
+            "stream_url": stream_url_for(r.talent_media_id),
+        }
+        for r in rows
+    ]
+    return {"items": items, "total": len(items)}
+
+
+@admin_router.delete("/talents/{account_id}/media/{media_id}")
+async def delete_talent_media(
+    account_id: int,
+    media_id: int,
+    current=Depends(get_current_account),
+    db: AsyncSession = Depends(get_db),
+):
+    """관리자 대행 영상 삭제 — 파일 + RAG .txt + Qdrant 포인트 + DB 행 제거."""
+    account, _admin = current
+    if account.account_type != "ADMIN":
+        raise HTTPException(status_code=403, detail="ADMIN_ONLY")
+
+    row = (
+        await db.execute(
+            select(TalentMedia).where(TalentMedia.talent_media_id == media_id)
+        )
+    ).scalar_one_or_none()
+    if not row:
+        raise HTTPException(status_code=404, detail="MEDIA_NOT_FOUND")
+    if row.account_id != account_id:
+        raise HTTPException(status_code=400, detail="ACCOUNT_MISMATCH")
+
+    # 영상 파일
+    try:
+        path = absolute_path(row.media_path)
+        if path.exists():
+            os.remove(path)
+    except OSError as e:
+        logger.warning(f"media file remove failed: {e}")
+    # RAG .txt
+    try:
+        rag_path = absolute_path(f"rag/{account_id}_{media_id}.txt")
+        if rag_path.exists():
+            os.remove(rag_path)
+    except OSError as e:
+        logger.warning(f"rag txt remove failed: {e}")
+    # Qdrant
+    try:
+        await delete_media_points(media_id)
+    except Exception as e:
+        logger.warning(f"qdrant delete failed: {e}")
+
+    await db.delete(row)
+    await db.commit()
+    return {"success": True, "deleted_id": media_id}
+
+
+@admin_router.delete("/talents/{account_id}")
+async def delete_talent(
+    account_id: int,
+    current=Depends(get_current_account),
+    db: AsyncSession = Depends(get_db),
+):
+    """관리자 인재 완전 삭제 — 계정 + 프로필 + 모든 영상/사진 파일 + RAG .txt + Qdrant 포인트.
+
+    DB 는 account_master → talent_master → talent_media 가 FK CASCADE 라 계정 행만
+    지우면 연쇄 삭제되지만, 디스크 파일과 Qdrant 포인트는 수동 정리해야 한다.
+    """
+    account, _admin = current
+    if account.account_type != "ADMIN":
+        raise HTTPException(status_code=403, detail="ADMIN_ONLY")
+
+    target = (
+        await db.execute(
+            select(AccountMaster).where(AccountMaster.account_id == account_id)
+        )
+    ).scalar_one_or_none()
+    if not target:
+        raise HTTPException(status_code=404, detail="ACCOUNT_NOT_FOUND")
+    if target.account_type != "TALENT":
+        raise HTTPException(status_code=400, detail="NOT_A_TALENT")
+
+    # 이 인재의 모든 미디어 — Qdrant 포인트 + RAG .txt 정리
+    media_rows = (
+        await db.execute(
+            select(TalentMedia.talent_media_id).where(
+                TalentMedia.account_id == account_id
+            )
+        )
+    ).scalars().all()
+    for media_id in media_rows:
+        try:
+            await delete_media_points(media_id)
+        except Exception as e:
+            logger.warning(f"qdrant delete failed (media={media_id}): {e}")
+        try:
+            rag_path = absolute_path(f"rag/{account_id}_{media_id}.txt")
+            if rag_path.exists():
+                os.remove(rag_path)
+        except OSError as e:
+            logger.warning(f"rag txt remove failed (media={media_id}): {e}")
+
+    # 인재 파일 디렉터리 전체 제거 (영상·썸네일·프로필 사진 = talent/{account_id}/)
+    try:
+        talent_dir = absolute_path(f"talent/{account_id}")
+        if talent_dir.exists():
+            shutil.rmtree(talent_dir)
+    except OSError as e:
+        logger.warning(f"talent dir remove failed (account={account_id}): {e}")
+
+    # 계정 행 삭제 → talent_master / talent_media 행은 FK CASCADE 로 연쇄 삭제
+    await db.delete(target)
+    await db.commit()
+    return {"success": True, "deleted_account_id": account_id}
 
 
 @admin_router.post("/talents/{account_id}/photo")

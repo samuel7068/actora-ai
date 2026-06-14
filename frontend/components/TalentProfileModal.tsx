@@ -4,11 +4,14 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Check, ImagePlus, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import PortfolioPanel from "@/components/PortfolioPanel";
 import { api, tokenStorage } from "@/lib/api";
 
 type Props = {
   open: boolean;
   onClose: () => void;
+  /** 관리자 대행: 대상 인재 account_id. 없으면 본인 프로필. */
+  accountId?: number;
 };
 
 type Gender = "MALE" | "FEMALE" | "SELF_DESCRIBED" | "";
@@ -182,7 +185,7 @@ function calcAge(isoDate: string): number | null {
   return age;
 }
 
-type TabKey = "required" | "basic" | "physical" | "career" | "sns";
+type TabKey = "required" | "basic" | "physical" | "career" | "sns" | "video";
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: "required", label: "필수 정보" },
@@ -191,6 +194,9 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: "career", label: "학력 · 경력 · 특기" },
   { key: "sns", label: "SNS" },
 ];
+
+// 동영상 탭 — 관리자 대행(accountId 존재)일 때만 노출
+const VIDEO_TAB: { key: TabKey; label: string } = { key: "video", label: "동영상" };
 
 type ProfileResponse = {
   stage_name: string | null;
@@ -222,7 +228,15 @@ type ProfileResponse = {
   profile_completion_rate: number;
 };
 
-export default function TalentProfileModal({ open, onClose }: Props) {
+export default function TalentProfileModal({ open, onClose, accountId }: Props) {
+  // 관리자 대행이면 admin 경로, 아니면 본인 경로
+  const profilePath =
+    accountId != null ? `/admin/talents/${accountId}` : "/talent/profile";
+  const photoPath =
+    accountId != null
+      ? `/admin/talents/${accountId}/photo`
+      : "/talent/profile/photo";
+
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -264,6 +278,9 @@ export default function TalentProfileModal({ open, onClose }: Props) {
   const [completionRate, setCompletionRate] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<TabKey>("required");
 
+  // 관리자 대행일 때만 '동영상' 탭 추가
+  const tabs = accountId != null ? [...TABS, VIDEO_TAB] : TABS;
+
   // 열릴 때마다 필수 탭으로 초기화
   useEffect(() => {
     if (open) setActiveTab("required");
@@ -286,7 +303,7 @@ export default function TalentProfileModal({ open, onClose }: Props) {
     setErr(null);
     setLoading(true);
     api
-      .get<ProfileResponse>("/talent/profile")
+      .get<ProfileResponse>(profilePath)
       .then((res) => {
         if (aborted) return;
         const d = res.data;
@@ -405,7 +422,7 @@ export default function TalentProfileModal({ open, onClose }: Props) {
       if (careerLevel) payload.career_level = careerLevel;
       if (careerYears !== "") payload.career_years = Number(careerYears);
 
-      const res = await api.put<ProfileResponse>("/talent/profile", payload);
+      const res = await api.put<ProfileResponse>(profilePath, payload);
       setCompletionRate(res.data.profile_completion_rate);
       setSavedFlash(true);
       setTimeout(() => {
@@ -469,7 +486,7 @@ export default function TalentProfileModal({ open, onClose }: Props) {
 
             <div className="bg-white border-b border-zinc-200 px-6 sm:px-8">
               <nav className="flex gap-1 overflow-x-auto -mb-px">
-                {TABS.map((t) => {
+                {tabs.map((t) => {
                   const isActive = activeTab === t.key;
                   const showRequiredDot =
                     t.key === "required" && !loading && !requiredFilled;
@@ -659,6 +676,7 @@ export default function TalentProfileModal({ open, onClose }: Props) {
                               next[idx] = "";
                               setProfileImageUrls(next);
                             }}
+                            photoPath={photoPath}
                           />
                         ))}
                       </div>
@@ -856,6 +874,11 @@ export default function TalentProfileModal({ open, onClose }: Props) {
                 </>
               )}
 
+              {/* 동영상 탭 — 프로필 로드와 무관하게 자체 목록을 불러옴 (관리자 대행 전용) */}
+              {activeTab === "video" && accountId != null && (
+                <PortfolioPanel accountId={accountId} variant="light" />
+              )}
+
               {err && (
                 <div className="rounded-lg bg-red-50 text-red-700 text-sm px-4 py-2">
                   {err}
@@ -973,11 +996,13 @@ function ProfilePhotoSlot({
   url,
   onUploaded,
   onRemove,
+  photoPath,
 }: {
   index: number;
   url: string;
   onUploaded: (url: string) => void;
   onRemove: () => void;
+  photoPath: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -990,10 +1015,7 @@ function ProfilePhotoSlot({
     try {
       const form = new FormData();
       form.append("file", file);
-      const res = await api.post<{ url: string }>(
-        "/talent/profile/photo",
-        form,
-      );
+      const res = await api.post<{ url: string }>(photoPath, form);
       onUploaded(res.data.url);
     } catch (e) {
       const detail = (e as { response?: { data?: { detail?: unknown } } })

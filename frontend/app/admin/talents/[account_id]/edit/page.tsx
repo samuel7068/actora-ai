@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { ImagePlus, Loader2, Save } from "lucide-react";
+import { Film, ImagePlus, Loader2, Save } from "lucide-react";
 
 import DashboardHeader from "@/components/DashboardHeader";
 import { useDashboardGuard } from "@/components/DashboardGuard";
@@ -316,6 +316,14 @@ export default function AdminTalentEditPage() {
             )}
 
             <div className="flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => router.push(`/admin/talents/${accountId}/portfolio`)}
+                className="inline-flex items-center gap-2 rounded-lg border border-amber-200/40 text-amber-100 px-4 py-2.5 text-sm hover:bg-amber-100/10 transition-colors mr-auto"
+              >
+                <Film className="w-4 h-4" />
+                포트폴리오
+              </button>
               <button
                 type="button"
                 onClick={() => router.push("/admin/talents")}

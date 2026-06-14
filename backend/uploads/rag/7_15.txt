@@ -1,0 +1,261 @@
+[
+  {
+    "scene_id": "scene_001",
+    "scene_start_sec": 0.0,
+    "scene_end_sec": 22.8,
+    "role": {
+      "character_name": "김그린",
+      "character_type": "자기소개 출연자",
+      "occupation": "모델 지망생",
+      "age_range": "20s",
+      "gender_appearance": "female"
+    },
+    "era": {
+      "period": "현대",
+      "setting": "실내 거실",
+      "confidence": 0.96
+    },
+    "scene_description": "긴 생머리의 20대 여성으로 보이는 인물이 회색 소파가 놓인 실내 거실에서 카메라를 향해 차분하게 자기소개를 하고 있다. 밝은 피부톤과 마른 체형, 단정한 옷차림이 깔끔하고 자연스러운 인상을 주며, 낮은 에너지의 느린 말투가 조용한 분위기를 만든다.",
+    "acting_analysis": {
+      "acting_style": [
+        "자연스러운",
+        "절제된",
+        "담백한"
+      ],
+      "emotion_delivery": "차분하고 담담하게 자신의 정보를 전달하는 자기소개 톤이다.",
+      "immersion_level": "낮음",
+      "camera_presence": "정면 응시 중심의 안정적인 카메라 대응",
+      "strength_keywords": [
+        "자연스러운 전달력",
+        "차분한 태도",
+        "안정감",
+        "담백한 표현"
+      ],
+      "weakness_keywords": [
+        "표정 변화 적음",
+        "에너지 낮음",
+        "감정 표현 절제"
+      ]
+    },
+    "speech_analysis": {
+      "speech_style": [
+        "자기소개형",
+        "설명형",
+        "정중한 말투"
+      ],
+      "tone_keywords": [
+        "차분한",
+        "부드러운",
+        "신뢰감 있는",
+        "담백한"
+      ],
+      "speech_speed": "느림",
+      "voice_characteristics": [
+        "낮은 에너지",
+        "중저음",
+        "호흡 간격이 긴 편",
+        "또렷하지만 힘을 뺀 발성"
+      ]
+    },
+    "physical_expression": {
+      "facial_expression_keywords": [
+        "차분한 표정",
+        "미소 기미",
+        "담담함",
+        "긴장감 적음"
+      ],
+      "gesture_keywords": [
+        "움직임 적음",
+        "정적인 자세",
+        "자기소개 중심"
+      ],
+      "eye_contact_style": "카메라를 향한 정면 응시",
+      "body_language_keywords": [
+        "편안한 자세",
+        "절제된 몸짓",
+        "안정적인 태도"
+      ]
+    },
+    "appearance": {
+      "hair_length": "롱헤어",
+      "hair": "긴 생머리 흑갈색",
+      "image_type": "청순형",
+      "eye_size": "보통",
+      "eyelid": "유쌍",
+      "eye_shape": "아몬드형",
+      "eye_tail": "보통",
+      "body_type": "마른형",
+      "body_style": "슬림형",
+      "skin_tone": "밝은 피부톤",
+      "impression_keywords": [
+        "청순",
+        "차분",
+        "단정",
+        "여성스러운",
+        "담백",
+        "동안"
+      ]
+    },
+    "resembling_celebrities": {
+      "candidates": [
+        "수지",
+        "한효주"
+      ],
+      "confidence": 0.42,
+      "note": "긴 생머리와 부드러운 얼굴선, 청순한 분위기가 유사하다."
+    },
+    "mood_keywords": [
+      "차분함",
+      "담담함",
+      "조용함",
+      "신뢰감",
+      "정돈된 분위기",
+      "긴장감 적음"
+    ],
+    "search_keywords": [
+      "20대 여성",
+      "긴 생머리",
+      "청순한 이미지",
+      "마른 체형",
+      "실내 거실",
+      "자기소개",
+      "차분한 말투",
+      "신뢰감 있는",
+      "담담한 분위기",
+      "정면 응시",
+      "자연스러운",
+      "조용한"
+    ],
+    "scene_summary": "긴 생머리와 밝은 피부톤의 20대 여성 출연자가 회색 소파가 있는 실내 거실에서 자기소개를 하고 있다. 마른 슬림 체형과 차분한 표정이 어우러지며, 느리고 절제된 말투로 담담하게 정보를 전달하는 모습이다.",
+    "account_id": "7",
+    "talent_media_id": "15"
+  },
+  {
+    "scene_id": "scene_002",
+    "scene_start_sec": 22.8,
+    "scene_end_sec": 37.8,
+    "role": {
+      "character_name": "김그린",
+      "character_type": "일반인",
+      "occupation": "자기소개",
+      "age_range": "20s",
+      "gender_appearance": "female"
+    },
+    "era": {
+      "period": "현대",
+      "setting": "실내 벽면 앞",
+      "confidence": 0.86
+    },
+    "scene_description": "긴 생머리의 20대 여성으로 보이는 인물이 실내 벽면 앞에 서서 정면을 향해 짧게 자기소개를 한다. 편안한 캐주얼 차림에 차분한 표정과 낮은 톤의 말투가 어우러져 담백하고 신뢰감 있는 인상을 준다.",
+    "acting_analysis": {
+      "acting_style": [
+        "자연스러운",
+        "절제된",
+        "담백한"
+      ],
+      "emotion_delivery": "차분하고 정돈된 자기소개 톤",
+      "immersion_level": "낮음",
+      "camera_presence": "정면 응시로 카메라를 의식하며 안정적으로 서 있는 편",
+      "strength_keywords": [
+        "차분함",
+        "신뢰감",
+        "정돈된 태도",
+        "자연스러운 자기소개"
+      ],
+      "weakness_keywords": [
+        "표정 변화 적음",
+        "감정 표현 적음",
+        "동작 적음"
+      ]
+    },
+    "speech_analysis": {
+      "speech_style": [
+        "자기소개체",
+        "짧은 멘트형",
+        "정중한 표현"
+      ],
+      "tone_keywords": [
+        "차분한",
+        "낮은 톤",
+        "담백한",
+        "예의 바른",
+        "신뢰감 있는"
+      ],
+      "speech_speed": "느림",
+      "voice_characteristics": [
+        "저음",
+        "호흡이 길지 않음",
+        "에너지 낮음",
+        "또렷한 발음"
+      ]
+    },
+    "physical_expression": {
+      "facial_expression_keywords": [
+        "담담한 표정",
+        "미소 적음",
+        "차분한 얼굴"
+      ],
+      "gesture_keywords": [
+        "가만히 서 있음",
+        "큰 제스처 없음"
+      ],
+      "eye_contact_style": "카메라 정면 응시",
+      "body_language_keywords": [
+        "곧게 선 자세",
+        "안정적인 스탠딩",
+        "긴장감 적은 몸짓"
+      ]
+    },
+    "appearance": {
+      "hair_length": "롱헤어",
+      "hair": "긴 생머리 흑갈색",
+      "image_type": "친근형",
+      "eye_size": "보통",
+      "eyelid": "유쌍",
+      "eye_shape": "아몬드형",
+      "eye_tail": "보통",
+      "body_type": "보통형",
+      "body_style": "일반인형",
+      "skin_tone": "중간 톤",
+      "impression_keywords": [
+        "차분",
+        "담백",
+        "친근",
+        "신뢰감",
+        "정돈된",
+        "자연스러운"
+      ]
+    },
+    "resembling_celebrities": {
+      "candidates": [],
+      "confidence": 0.0,
+      "note": ""
+    },
+    "mood_keywords": [
+      "차분함",
+      "담백함",
+      "정돈됨",
+      "신뢰감",
+      "조용함",
+      "절제"
+    ],
+    "search_keywords": [
+      "20대 여성",
+      "긴 생머리",
+      "실내 벽면 앞",
+      "자기소개",
+      "차분한",
+      "낮은 톤",
+      "신뢰감 있는",
+      "담백한",
+      "정면 응시",
+      "캐주얼 차림",
+      "자연스러운",
+      "일반인 느낌",
+      "조용한 분위기"
+    ],
+    "scene_summary": "긴 생머리의 20대 여성으로 보이는 인물이 실내 벽면 앞에 서서 카메라를 정면으로 바라보며 짧게 자기소개를 한다. 캐주얼한 복장과 곧게 선 자세, 낮고 차분한 목소리가 어우러져 담백하고 신뢰감 있는 분위기를 만든다.",
+    "account_id": "7",
+    "talent_media_id": "15"
+  }
+]
