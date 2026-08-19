@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Film, Loader2, Play, Upload, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { api } from "@/lib/api";
+import { tokenStorage } from "@/lib/api";
 
 type Props = {
   open: boolean;
@@ -36,6 +36,53 @@ type AnalyzeResponse = {
   rag_scenes?: Record<string, unknown>[] | null;
 };
 
+/** 분석 중 서버가 NDJSON 으로 흘려보내는 진행 이벤트 */
+type ProgressEvent =
+  | {
+      type: "stage";
+      stage: string;
+      label: string;
+      success: boolean;
+      elapsed_ms: number;
+      error?: string | null;
+    }
+  | {
+      type: "scene_start";
+      index: number;
+      total: number;
+      scene_id: string;
+      start_sec?: number | null;
+      end_sec?: number | null;
+    }
+  | {
+      type: "scene";
+      index: number;
+      total: number;
+      scene_id: string;
+      start_sec?: number | null;
+      end_sec?: number | null;
+      summary?: string | null;
+      target_identified?: boolean | null;
+      target_similarity?: number | null;
+      error?: string;
+    }
+  | { type: "summary"; summary: string }
+  | { type: "result"; result: AnalyzeResponse }
+  | { type: "error"; error: string; status?: number };
+
+/** 진행 화면에 쌓이는 한 줄 */
+type FeedItem = {
+  id: string;
+  kind: "stage" | "scene" | "summary";
+  title: string;
+  body?: string | null;
+  ok?: boolean;
+  meta?: string;
+};
+
+const fmtSec = (v?: number | null) =>
+  typeof v === "number" ? v.toFixed(1) : "?";
+
 export default function VideoAnalysisModal({ open, onClose, accountId }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -44,6 +91,10 @@ export default function VideoAnalysisModal({ open, onClose, accountId }: Props) 
   const [result, setResult] = useState<AnalyzeResponse | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [activeStage, setActiveStage] = useState<string>("");
+  // 스트리밍 진행 상황
+  const [feed, setFeed] = useState<FeedItem[]>([]);
+  const [current, setCurrent] = useState<string>("");
+  const feedEndRef = useRef<HTMLDivElement>(null);
 
   // 모달 닫힐 때 상태 정리
   useEffect(() => {
@@ -55,7 +106,16 @@ export default function VideoAnalysisModal({ open, onClose, accountId }: Props) 
     setResult(null);
     setErr(null);
     setActiveStage("");
+    setFeed([]);
+    setCurrent("");
   }, [open, videoUrl]);
+
+  // 새 항목이 쌓이면 맨 아래로 따라 내려간다
+  useEffect(() => {
+    if (feed.length) {
+      feedEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    }
+  }, [feed]);
 
   // ESC 닫기
   useEffect(() => {
@@ -80,31 +140,119 @@ export default function VideoAnalysisModal({ open, onClose, accountId }: Props) 
     setVideoUrl(URL.createObjectURL(f));
   };
 
+  const handleEvent = (ev: ProgressEvent) => {
+    switch (ev.type) {
+      case "stage":
+        setFeed((f) => [
+          ...f,
+          {
+            id: `stage-${ev.stage}-${f.length}`,
+            kind: "stage",
+            title: ev.label,
+            body: ev.error ?? null,
+            ok: ev.success,
+            meta: `${(ev.elapsed_ms / 1000).toFixed(1)}s`,
+          },
+        ]);
+        setCurrent(`${ev.label} 완료`);
+        break;
+      case "scene_start":
+        setCurrent(`장면 분석 ${ev.index}/${ev.total} · ${ev.scene_id}`);
+        break;
+      case "scene":
+        setFeed((f) => [
+          ...f,
+          {
+            id: `scene-${ev.scene_id}-${f.length}`,
+            kind: "scene",
+            title: `${ev.scene_id} · ${fmtSec(ev.start_sec)}~${fmtSec(ev.end_sec)}초 (${ev.index}/${ev.total})`,
+            body: ev.error ?? ev.summary ?? null,
+            ok: !ev.error,
+            meta:
+              ev.target_identified === false
+                ? "인재 미확인"
+                : typeof ev.target_similarity === "number"
+                  ? `얼굴 일치 ${ev.target_similarity.toFixed(2)}`
+                  : undefined,
+          },
+        ]);
+        break;
+      case "summary":
+        setFeed((f) => [
+          ...f,
+          {
+            id: "summary",
+            kind: "summary",
+            title: `영상 대표 요약 (${ev.summary.length}자)`,
+            body: ev.summary,
+            ok: true,
+          },
+        ]);
+        setCurrent("대표 요약 생성 완료");
+        break;
+      case "result":
+        setResult(ev.result);
+        if (ev.result.stages.length) setActiveStage(ev.result.stages[0].stage);
+        break;
+      case "error":
+        setErr(ev.error || "분석 실패 (서버 오류)");
+        break;
+    }
+  };
+
   const onAnalyze = async () => {
     if (!videoFile) return;
     setAnalyzing(true);
     setErr(null);
     setResult(null);
+    setFeed([]);
+    setCurrent("영상 업로드 중…");
     try {
       const form = new FormData();
       form.append("file", videoFile);
       if (accountId != null) form.append("account_id", String(accountId));
-      const res = await api.post<AnalyzeResponse>(
-        "/talent/portfolio/analyze-debug",
-        form,
-        { timeout: 1000 * 60 * 10 }, // 10분
-      );
-      setResult(res.data);
-      // 첫 번째 stage 자동 선택
-      if (res.data.stages.length) {
-        setActiveStage(res.data.stages[0].stage);
+
+      const token = tokenStorage.get();
+      const res = await fetch("/api/talent/portfolio/analyze-stream", {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        body: form,
+      });
+      if (!res.ok || !res.body) {
+        throw new Error(`분석 요청 실패 (HTTP ${res.status})`);
+      }
+
+      // NDJSON — 줄 단위로 끊어 읽는다. 마지막 조각은 다음 청크와 이어 붙인다.
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          try {
+            handleEvent(JSON.parse(line) as ProgressEvent);
+          } catch {
+            // 깨진 줄은 건너뛴다 — 스트림 전체를 중단시키지 않는다
+          }
+        }
+      }
+      if (buffer.trim()) {
+        try {
+          handleEvent(JSON.parse(buffer) as ProgressEvent);
+        } catch {
+          /* noop */
+        }
       }
     } catch (e) {
-      const detail = (e as { response?: { data?: { detail?: unknown } } })
-        ?.response?.data?.detail;
-      setErr(typeof detail === "string" ? detail : "분석 실패 (서버 오류)");
+      setErr(e instanceof Error ? e.message : "분석 실패 (서버 오류)");
     } finally {
       setAnalyzing(false);
+      setCurrent("");
     }
   };
 
@@ -251,9 +399,102 @@ export default function VideoAnalysisModal({ open, onClose, accountId }: Props) 
                 )}
 
                 {analyzing && (
-                  <div className="flex-1 flex flex-col items-center justify-center text-zinc-500 text-sm gap-3">
-                    <Loader2 className="w-8 h-8 animate-spin" />
-                    분석 진행 중…
+                  <div className="flex-1 flex flex-col overflow-hidden">
+                    {/* 현재 진행 중인 작업 */}
+                    <div className="shrink-0 flex items-center gap-2 px-4 py-3 border-b border-zinc-200 bg-white">
+                      <Loader2 className="w-4 h-4 animate-spin text-zinc-500 shrink-0" />
+                      <span className="text-sm text-zinc-600 truncate">
+                        {current || "분석 진행 중…"}
+                      </span>
+                    </div>
+
+                    {/* 분석되는 내용이 한 줄씩 쌓인다 */}
+                    <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
+                      {feed.length === 0 && (
+                        <div className="text-sm text-zinc-400">
+                          영상을 업로드하고 분석을 준비하는 중입니다…
+                        </div>
+                      )}
+
+                      {feed.map((it) => {
+                        if (it.kind === "stage") {
+                          return (
+                            <div
+                              key={it.id}
+                              className="flex items-center gap-2 text-xs text-zinc-500"
+                            >
+                              <span
+                                className={
+                                  it.ok
+                                    ? "shrink-0 w-1.5 h-1.5 rounded-full bg-emerald-500"
+                                    : "shrink-0 w-1.5 h-1.5 rounded-full bg-red-500"
+                                }
+                              />
+                              <span className="font-medium text-zinc-700">
+                                {it.title}
+                              </span>
+                              {it.meta && <span>· {it.meta}</span>}
+                              {it.body && (
+                                <span className="text-red-500 truncate">
+                                  {it.body}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        }
+
+                        if (it.kind === "summary") {
+                          return (
+                            <div
+                              key={it.id}
+                              className="rounded-lg border border-amber-200 bg-amber-50 p-3"
+                            >
+                              <div className="text-xs font-semibold text-amber-700 mb-1">
+                                {it.title}
+                              </div>
+                              <p className="text-sm leading-relaxed text-zinc-800">
+                                {it.body}
+                              </p>
+                            </div>
+                          );
+                        }
+
+                        // scene — 분석된 문장이 흐르는 본체
+                        return (
+                          <div
+                            key={it.id}
+                            className="rounded-lg border border-zinc-200 bg-white p-3"
+                          >
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-[11px] font-medium text-zinc-500">
+                                {it.title}
+                              </span>
+                              {it.meta && (
+                                <span
+                                  className={
+                                    it.meta === "인재 미확인"
+                                      ? "text-[10px] px-1.5 py-0.5 rounded-full bg-zinc-100 text-zinc-500"
+                                      : "text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700"
+                                  }
+                                >
+                                  {it.meta}
+                                </span>
+                              )}
+                            </div>
+                            <p
+                              className={
+                                it.ok
+                                  ? "text-sm leading-relaxed text-zinc-700"
+                                  : "text-sm leading-relaxed text-red-500"
+                              }
+                            >
+                              {it.body || "(요약 없음)"}
+                            </p>
+                          </div>
+                        );
+                      })}
+                      <div ref={feedEndRef} />
+                    </div>
                   </div>
                 )}
 

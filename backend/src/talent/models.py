@@ -56,6 +56,11 @@ class TalentMaster(Base):
     profile_image_url = Column(String(500), nullable=True)
     # 다중 프로필 사진 URL — string 배열. 최소 1개, 최대 5개 (앱 레벨 검증).
     profile_image_urls = Column(JSONB, nullable=True)
+    # 프로필 사진에서 추출한 InsightFace 얼굴 임베딩 캐시.
+    # 영상 분석 시 등장인물 중 이 인재를 특정하는 데 사용 (src/analysis/face.py).
+    # {model, dim, source_hash, computed_at, items:[{source,embedding,...}], failed:[...]}
+    # profile_image_urls 가 바뀌면 source_hash 불일치로 자동 재계산된다.
+    face_embeddings = Column(JSONB, nullable=True)
     introduction = Column(Text, nullable=True)
 
     height_cm = Column(SmallInteger, nullable=True)

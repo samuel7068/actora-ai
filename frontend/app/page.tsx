@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
 import {
   Sparkles,
@@ -10,6 +10,7 @@ import {
   Clapperboard,
   Trophy,
   LayoutGrid,
+  User,
   type LucideIcon,
 } from "lucide-react";
 
@@ -18,7 +19,7 @@ import RegisterModal from "@/components/RegisterModal";
 import RollingList from "@/components/RollingList";
 import TaskShareModal from "@/components/TaskShareModal";
 import UserMenu from "@/components/UserMenu";
-import { PUBLIC_MENU } from "@/lib/menus";
+import { PUBLIC_MENU, getDashboardPath, type MenuItem } from "@/lib/menus";
 import { isHiddenToday } from "@/lib/taskShare";
 import { useAuth } from "@/store/auth";
 
@@ -162,6 +163,24 @@ export default function Home() {
   const restore = useAuth((s) => s.restore);
   const account = useAuth((s) => s.account);
 
+  // 로그인한 사용자에게만 헤더 맨 뒤에 '마이 페이지' 를 붙인다.
+  // (비로그인 상태에서는 이동할 대시보드가 없다)
+  const navMenu: MenuItem[] = useMemo(
+    () =>
+      account
+        ? [
+            ...PUBLIC_MENU,
+            {
+              key: "mypage",
+              label: "마이 페이지",
+              href: getDashboardPath(account.account_type),
+              Icon: User,
+            },
+          ]
+        : PUBLIC_MENU,
+    [account],
+  );
+
   // ADMIN 으로 account 가 채워질 때마다 task-share 모달 자동 노출.
   // 단 "오늘 하루 그만 보기" 설정한 날에는 띄우지 않음.
   useEffect(() => {
@@ -211,7 +230,7 @@ export default function Home() {
               className="flex items-center md:flex-1 md:ml-8 mr-4 sm:mr-6"
             >
               <ul className="hidden md:flex flex-1 items-center justify-around">
-                {PUBLIC_MENU.map((item) => (
+                {navMenu.map((item) => (
                   <li key={item.key}>
                     <a
                       href={item.href}

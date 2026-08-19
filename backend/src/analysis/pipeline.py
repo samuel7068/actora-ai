@@ -141,45 +141,82 @@ def extract_keyframes(
     scenes: list[dict[str, Any]],
     out_dir: Path,
     thumbnail_max_size: int = 320,
+    samples_per_scene: int = 1,
 ) -> list[dict[str, Any]]:
-    """각 장면의 중간 시점 프레임을 jpg 로 저장 + base64 썸네일 반환."""
+    """각 장면의 대표 프레임을 jpg 로 저장 + base64 썸네일 반환.
+
+    samples_per_scene 이 2 이상이면 장면을 균등 분할한 여러 시점에서 후보 프레임을
+    추가로 뽑아 `candidates` 에 담는다. 단계 3.5(얼굴 식별)가 이 후보들 중
+    인재가 가장 잘 잡힌 프레임을 대표로 승격시킨다 — 장면 중앙에서 인재가
+    뒤돌아 있거나 화면 밖이면 그 장면 전체를 놓치기 때문.
+
+    대표 프레임은 항상 장면 중앙 시점이며 파일명은 `{scene_id}.jpg`
+    (samples_per_scene=1 이면 기존 동작과 완전히 동일).
+    """
     out_dir.mkdir(parents=True, exist_ok=True)
     cap = cv2.VideoCapture(str(video_path))
     fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
     keyframes: list[dict[str, Any]] = []
 
+    n = max(1, samples_per_scene)
+    # 균등 내부 지점 — n=1 → [0.5], n=3 → [0.25, 0.5, 0.75]
+    fractions = [(i + 1) / (n + 1) for i in range(n)]
+    # 중앙에 가장 가까운 시점이 대표
+    center_idx = min(range(n), key=lambda i: abs(fractions[i] - 0.5))
+
     try:
         for scene in scenes:
-            mid_sec = (scene["start_sec"] + scene["end_sec"]) / 2
-            frame_idx = max(0, int(mid_sec * fps))
-            cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
-            ok, frame = cap.read()
-            if not ok or frame is None:
-                logger.warning(f"keyframe miss: {scene['scene_id']} @ {mid_sec:.2f}s")
-                continue
-            h, w = frame.shape[:2]
-            # 원본 jpg 저장
-            full_path = out_dir / f"{scene['scene_id']}.jpg"
-            cv2.imwrite(str(full_path), frame, [cv2.IMWRITE_JPEG_QUALITY, 88])
+            sid = scene["scene_id"]
+            start, end = scene["start_sec"], scene["end_sec"]
+            candidates: list[dict[str, Any]] = []
+            frames_by_idx: dict[int, Any] = {}
 
-            # 작은 썸네일 → base64
+            for i, frac in enumerate(fractions):
+                t_sec = start + (end - start) * frac
+                frame_idx = max(0, int(t_sec * fps))
+                cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
+                ok, frame = cap.read()
+                if not ok or frame is None:
+                    logger.warning(f"keyframe miss: {sid} @ {t_sec:.2f}s")
+                    continue
+
+                name = f"{sid}.jpg" if i == center_idx else f"{sid}_c{i}.jpg"
+                path = out_dir / name
+                cv2.imwrite(str(path), frame, [cv2.IMWRITE_JPEG_QUALITY, 88])
+                candidates.append({
+                    "sample_index": i,
+                    "timestamp_sec": round(t_sec, 3),
+                    "frame_index": frame_idx,
+                    "file_path": str(path),
+                })
+                frames_by_idx[i] = frame
+
+            if not candidates:
+                continue
+
+            # 대표 = 중앙 시점. 중앙 읽기가 실패했으면 첫 후보로 대체.
+            rep_i = center_idx if center_idx in frames_by_idx else min(frames_by_idx)
+            rep_frame = frames_by_idx[rep_i]
+            rep_meta = next(c for c in candidates if c["sample_index"] == rep_i)
+
+            h, w = rep_frame.shape[:2]
             scale = thumbnail_max_size / max(w, h)
-            if scale < 1.0:
-                thumb = cv2.resize(frame, (int(w * scale), int(h * scale)))
-            else:
-                thumb = frame
+            thumb = cv2.resize(rep_frame, (int(w * scale), int(h * scale))) if scale < 1.0 else rep_frame
             _, buf = cv2.imencode(".jpg", thumb, [cv2.IMWRITE_JPEG_QUALITY, 75])
             b64 = base64.b64encode(buf.tobytes()).decode("ascii")
 
-            keyframes.append({
-                "scene_id": scene["scene_id"],
-                "timestamp_sec": round(mid_sec, 3),
-                "frame_index": frame_idx,
+            kf: dict[str, Any] = {
+                "scene_id": sid,
+                "timestamp_sec": rep_meta["timestamp_sec"],
+                "frame_index": rep_meta["frame_index"],
                 "width": w,
                 "height": h,
-                "file_path": str(full_path),
+                "file_path": rep_meta["file_path"],
                 "thumbnail_data_uri": f"data:image/jpeg;base64,{b64}",
-            })
+            }
+            if n > 1:
+                kf["candidates"] = candidates
+            keyframes.append(kf)
     finally:
         cap.release()
 
@@ -382,6 +419,31 @@ def analyze_scene_with_gpt(
             "image_url": {"url": keyframe["thumbnail_data_uri"], "detail": "low"},
         })
 
+    # ── 단계 3.5(얼굴 식별) 결과를 반영 — 여러 인물이 나올 때 평가 대상을 못 박는다.
+    #    target_present 가 None 이면 식별을 수행하지 않은 것 → 기존 동작 유지.
+    target_present = keyframe.get("target_present") if keyframe else None
+    face_count = int((keyframe or {}).get("face_count") or 0)
+    crop_uri = (keyframe or {}).get("target_crop_data_uri")
+
+    if crop_uri:
+        content.append({"type": "text", "text": (
+            f"[평가 대상 지정] 이 장면에는 인물이 {face_count}명 등장합니다. "
+            "바로 아래 이미지는 그중 **평가 대상 인재의 얼굴만 잘라낸 것**입니다. "
+            "반드시 이 인물만 분석하세요. 다른 등장인물의 외모·표정·의상·연기는 "
+            "분석에 포함하지 마세요. 장면 전체 이미지는 배경·장소·상황 파악에만 사용하세요."
+        )})
+        content.append({
+            "type": "image_url",
+            "image_url": {"url": crop_uri, "detail": "low"},
+        })
+    elif target_present is False:
+        content.append({"type": "text", "text": (
+            f"[주의] 이 장면에서는 평가 대상 인재의 얼굴이 확인되지 않았습니다"
+            f"(검출된 얼굴 {face_count}명). 화면 속 인물이 대상 인재가 아닐 수 있으므로 "
+            "외모·표정에 근거한 항목(hair/eye/image_type 등)은 비워 두고, "
+            "장소·상황과 음성·대사에 근거해 채울 수 있는 항목만 채우세요."
+        )})
+
     res = client.chat.completions.create(
         model=prompt.get("model", "gpt-4o-mini"),
         response_format={"type": "json_object"},
@@ -404,7 +466,103 @@ def analyze_scene_with_gpt(
     parsed["scene_id"] = scene["scene_id"]
     parsed["scene_start_sec"] = round(start, 3)
     parsed["scene_end_sec"] = round(end, 3)
+
+    # 얼굴 식별 메타 — RAG 검색 시 신뢰도 필터링에 사용
+    if keyframe is not None and target_present is not None:
+        parsed["target_identified"] = bool(target_present)
+        parsed["target_similarity"] = keyframe.get("target_similarity")
+        parsed["target_confident"] = bool(keyframe.get("target_confident"))
+        parsed["scene_face_count"] = face_count
     return parsed
+
+
+# 인재 카테고리 → 종합 요약 프롬프트에 넣을 한글 라벨
+_CATEGORY_LABELS = {
+    "ACTOR": "연기자(배우)",
+    "MODEL": "모델",
+    "INFLUENCER": "인플루언서",
+    "VOCAL": "보컬",
+    "DANCER": "댄서",
+    "MC": "MC(진행자)",
+    "CREATOR": "크리에이터",
+}
+
+# 종합 요약에 넣을 최대 scene 수. 초과하면 균등 간격으로 추려
+# 영상 앞뒤의 서로 다른 상황이 골고루 반영되게 한다 (앞부분만 자르면 뒷 상황이 통째로 사라짐).
+_SUMMARY_MAX_SCENES = 80
+
+
+def summarize_media_scenes(
+    *,
+    rag_scenes: list[dict[str, Any]],
+    openai_api_key: str,
+    main_category: str | None = None,
+) -> str | None:
+    """단계 6.5 — scene 요약들을 영상 1편의 대표 서술로 종합.
+
+    scene_summary 를 그대로 이어 붙이면 scene 70개에 8,000자가 되고 같은 표현이
+    수십 번 반복된다. 그렇다고 앞부분만 자르면 뒤쪽의 다른 상황이 사라지므로,
+    GPT 로 **중복만 걷어내고 서로 다른 정보는 살리는** 서술을 만든다.
+
+    실패하면 None 을 반환 — 호출 측에서 기존 이어붙이기로 fallback 한다.
+    """
+    if not openai_api_key:
+        return None
+
+    # 인재로 특정되지 않은 scene 은 다른 등장인물을 묘사한 것일 수 있어 제외.
+    # (target_identified 가 None 이면 얼굴 식별을 수행하지 않은 영상 → 그대로 사용)
+    usable = [
+        sc for sc in rag_scenes
+        if isinstance(sc, dict) and not sc.get("error")
+        and (sc.get("scene_summary") or "").strip()
+    ]
+    identified = [sc for sc in usable if sc.get("target_identified") is not False]
+    if identified:
+        usable = identified
+
+    if not usable:
+        return None
+
+    if len(usable) > _SUMMARY_MAX_SCENES:
+        step = len(usable) / _SUMMARY_MAX_SCENES
+        usable = [usable[int(i * step)] for i in range(_SUMMARY_MAX_SCENES)]
+
+    lines = []
+    for sc in usable:
+        start = sc.get("scene_start_sec")
+        end = sc.get("scene_end_sec")
+        when = f" ({start}~{end}초)" if start is not None and end is not None else ""
+        lines.append(f"- {sc.get('scene_id')}{when}: {sc['scene_summary'].strip()}")
+
+    from openai import OpenAI
+    from src.analysis.prompts import get_prompt
+
+    prompt = get_prompt("media_summary", file="portfolio_video_summary.toml")
+    user_prompt = prompt["user_template"].format(
+        category_label=_CATEGORY_LABELS.get((main_category or "").upper(), "인재"),
+        scene_count=len(usable),
+        scene_lines="\n".join(lines),
+    )
+
+    client = OpenAI(api_key=openai_api_key)
+    res = client.chat.completions.create(
+        model=prompt.get("model", "gpt-4o-mini"),
+        response_format={"type": "json_object"},
+        messages=[
+            {"role": "system", "content": prompt["system"]},
+            {"role": "user", "content": user_prompt},
+        ],
+        temperature=prompt.get("temperature", 0.2),
+    )
+
+    import json as _json
+    try:
+        parsed = _json.loads(res.choices[0].message.content or "{}")
+    except _json.JSONDecodeError:
+        return None
+
+    summary = (parsed.get("summary") or "").strip()
+    return summary or None
 
 
 def transcribe_whisper(audio_path: Path, openai_api_key: str, language: str | None = "ko") -> dict[str, Any]:

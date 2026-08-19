@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, LayoutDashboard, LogOut, User } from "lucide-react";
+import { ChevronDown, LogOut, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
@@ -119,16 +119,8 @@ export default function UserMenu({
               }}
               className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-zinc-700 hover:bg-zinc-50 transition-colors"
             >
-              <LayoutDashboard className="w-4 h-4" />
-              대시보드
-            </button>
-
-            <button
-              type="button"
-              className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-zinc-700 hover:bg-zinc-50 transition-colors"
-            >
               <User className="w-4 h-4" />
-              마이페이지
+              마이 페이지
             </button>
 
             <button

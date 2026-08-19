@@ -70,6 +70,12 @@ def _scene_payload(
         "body_type": appearance.get("body_type"),
         "body_style": appearance.get("body_style"),
         "scene_summary": scene.get("scene_summary"),
+        # 단계 3.5 얼굴 식별 결과 — 검색 시 "인재가 실제로 확인된 scene" 필터링용.
+        # None 이면 식별을 수행하지 않은 영상 (프로필 사진 없음 등).
+        "target_identified": scene.get("target_identified"),
+        "target_confident": scene.get("target_confident"),
+        "target_similarity": scene.get("target_similarity"),
+        "scene_face_count": scene.get("scene_face_count"),
     }
 
 

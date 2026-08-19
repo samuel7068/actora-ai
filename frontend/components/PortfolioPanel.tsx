@@ -104,9 +104,12 @@ export default function PortfolioPanel({
   const titleTextCls = light
     ? "text-sm font-semibold text-zinc-900 truncate"
     : "text-sm font-semibold text-white truncate drop-shadow";
+  // 기본 2줄 → 카드 hover 시 전체 표시.
+  // ai_summary 는 scene 요약을 이어붙인 것이라 수천 자에 달할 수 있어,
+  // 최대 높이를 두고 그 안에서 스크롤하게 한다 (카드가 무한정 길어지는 것을 방지).
   const summaryCls = light
-    ? "mt-1.5 text-xs leading-relaxed text-zinc-600 line-clamp-2"
-    : "mt-1.5 text-xs leading-relaxed text-white/75 line-clamp-2 drop-shadow";
+    ? "mt-1.5 text-xs leading-relaxed text-zinc-600 select-text cursor-text line-clamp-2 group-hover:line-clamp-none group-hover:max-h-48 group-hover:overflow-y-auto group-hover:pr-1"
+    : "mt-1.5 text-xs leading-relaxed text-white/75 select-text cursor-text line-clamp-2 drop-shadow group-hover:line-clamp-none group-hover:max-h-48 group-hover:overflow-y-auto group-hover:pr-1";
   const metaCls = light ? "mt-2 text-[11px] text-zinc-400" : "mt-2 text-[11px] text-white/60";
   const emptyCls = light
     ? "rounded-xl border border-zinc-200 bg-zinc-50 p-10 text-center text-zinc-500"
@@ -185,19 +188,25 @@ export default function PortfolioPanel({
                     </span>
                   )}
                 </div>
-                <div className="p-3">
+                <div className="px-3 pt-3">
                   <div className={titleTextCls}>
                     {m.title ||
                       m.original_file_name ||
                       `영상 #${m.talent_media_id}`}
                   </div>
-                  {m.ai_summary && <p className={summaryCls}>{m.ai_summary}</p>}
-                  <div className={metaCls}>
-                    조회 {m.view_count} ·{" "}
-                    {new Date(m.created_at).toLocaleDateString("ko-KR")}
-                  </div>
                 </div>
               </button>
+
+              {/* 요약·메타는 재생 버튼 밖에 둔다 —
+                  button 안에 있으면 브라우저가 드래그를 버튼 조작으로 처리해
+                  텍스트를 선택·복사할 수 없다. */}
+              <div className="px-3 pb-3">
+                {m.ai_summary && <p className={summaryCls}>{m.ai_summary}</p>}
+                <div className={metaCls}>
+                  조회 {m.view_count} ·{" "}
+                  {new Date(m.created_at).toLocaleDateString("ko-KR")}
+                </div>
+              </div>
             </div>
           ))}
         </div>

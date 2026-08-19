@@ -33,6 +33,8 @@ opencv-python-headless = "^4.10.0"
 numpy = "^1.26.4"
 openai = "^1.54.0"
 librosa = "^0.10.0"
+insightface = "^1.0.1"
+onnxruntime = "^1.29.0"
 
 [build-system]
 requires = ["poetry-core"]

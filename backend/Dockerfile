@@ -40,6 +40,16 @@ WORKDIR /app
 
 COPY --from=builder /app/.venv /app/.venv
 
+# InsightFace 얼굴 인식 모델(buffalo_l) 프리다운로드.
+# 런타임 첫 요청에서 받으면 약 288MB 다운로드로 응답이 수 분 지연되고,
+# 컨테이너를 새로 띄울 때마다 반복된다. zip 원본은 지워 이미지 용량을 아낀다.
+ENV INSIGHTFACE_HOME=/opt/insightface
+RUN python -c "from insightface.app import FaceAnalysis; \
+        FaceAnalysis(name='buffalo_l', root='/opt/insightface', \
+                     providers=['CPUExecutionProvider'], \
+                     allowed_modules=['detection', 'recognition']).prepare(ctx_id=-1)" \
+    && rm -f /opt/insightface/models/*.zip
+
 COPY . .
 
 # 루트의 TASK_SHARE.md 를 컨테이너 안에 복사 (관리자 API 가 읽음)
