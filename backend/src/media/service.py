@@ -30,7 +30,7 @@ _ALLOWED_MOVIE_MIME = {
     "video/quicktime": "mov",
     "video/webm": "webm",
 }
-MAX_PHOTO_BYTES = 10 * 1024 * 1024  # 10 MB
+MAX_PHOTO_BYTES = 30 * 1024 * 1024  # 30 MB — 스마트폰·DSLR 원본 사진 대응
 MAX_MOVIE_BYTES = 500 * 1024 * 1024  # 500 MB
 
 
@@ -113,3 +113,36 @@ async def save_upload_file(
 def stream_url_for(media_id: int) -> str:
     """클라이언트에게 알려줄 미디어 조회 URL."""
     return f"/api/media/{media_id}"
+
+# ─────────────────────────────────────────────────────────
+# 삭제 대장 — 개발 PC ↔ 운영 서버 파일 동기화용
+# ─────────────────────────────────────────────────────────
+# DB 와 Qdrant 는 두 환경이 공유하지만 파일은 각자 디스크에 있다.
+# rsync 는 삭제를 전파하지 않으므로(전파시키면 반대편에서만 등록한 파일이 지워진다),
+# 여기에 "지운 경로" 를 남겨 두고 동기화 스크립트가 그 목록만 반대편에서 지운다.
+#
+# 이 파일은 rsync 대상에서 제외한다 (scripts/sync-uploads.sh 참조).
+DELETION_LOG_NAME = ".deleted.log"
+
+
+def deletion_log_path() -> Path:
+    return Path(get_settings().UPLOAD_DIR) / DELETION_LOG_NAME
+
+
+def record_deletion(relative_key: str) -> None:
+    """삭제한 상대 경로를 대장에 남긴다 (best-effort — 실패해도 삭제는 진행).
+
+    relative_key 는 uploads 기준 상대 경로.
+        talent/12/portfolio/12_22.mp4
+        talent/12                      ← 디렉토리 통째로 지운 경우
+    """
+    key = (relative_key or "").strip().strip("/")
+    if not key:
+        return
+    try:
+        path = deletion_log_path()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf-8") as f:
+            f.write(f"{key}\n")
+    except Exception as e:
+        logger.warning(f"삭제 대장 기록 실패 ({key}): {e}")

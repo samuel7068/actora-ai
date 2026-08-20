@@ -21,6 +21,7 @@ from src.auth.deps import get_current_account
 from src.media.schemas import MediaInfo, MediaListResponse
 from src.analysis.rag_index import delete_media_points
 from src.media.service import (
+    record_deletion,
     absolute_path,
     save_upload_file,
     stream_url_for,
@@ -176,16 +177,18 @@ async def delete_my_media(
         path = absolute_path(row.media_path)
         if path.exists():
             os.remove(path)
+        # 반대편(운영 서버 / 개발 PC)에서도 지우도록 대장에 남긴다
+        record_deletion(row.media_path)
     except OSError as e:
         logger.warning(f"media file remove failed: {e}")
 
     # RAG .txt 제거 (uploads/rag/{account_id}_{talent_media_id}.txt) — best-effort
     try:
-        rag_path = absolute_path(
-            f"rag/{row.account_id}_{row.talent_media_id}.txt"
-        )
+        rag_key = f"rag/{row.account_id}_{row.talent_media_id}.txt"
+        rag_path = absolute_path(rag_key)
         if rag_path.exists():
             os.remove(rag_path)
+        record_deletion(rag_key)
     except OSError as e:
         logger.warning(f"rag txt remove failed: {e}")
 

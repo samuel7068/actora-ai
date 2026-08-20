@@ -39,7 +39,9 @@ _PROFILE_PHOTO_MIME = {
     "image/webp": "webp",
     "image/gif": "gif",
 }
-_MAX_PROFILE_PHOTO_BYTES = 10 * 1024 * 1024  # 10 MB
+# 스마트폰·DSLR 원본 사진이 10~30MB 라 10MB 로는 자주 막힌다.
+# 상위 경로(nginx 600M, Next 프록시 500mb)는 여유가 충분하다.
+_MAX_PROFILE_PHOTO_BYTES = 30 * 1024 * 1024  # 30 MB
 
 def _profile_relative_key(account_id: int, filename: str) -> str:
     return f"talent/{account_id}/profile/{filename}"

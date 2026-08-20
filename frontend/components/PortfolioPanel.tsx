@@ -19,7 +19,8 @@ type MediaItem = {
   stream_url: string;
 };
 
-const ADMIN_MAX = 5;
+// 인재당 등록 가능한 영상 수 (관리자 대행 업로드에 적용)
+const ADMIN_MAX = 10;
 
 type Variant = "dark" | "light";
 

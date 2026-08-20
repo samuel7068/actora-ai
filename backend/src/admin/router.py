@@ -389,13 +389,16 @@ async def delete_talent_media(
         path = absolute_path(row.media_path)
         if path.exists():
             os.remove(path)
+        record_deletion(row.media_path)
     except OSError as e:
         logger.warning(f"media file remove failed: {e}")
     # RAG .txt
     try:
-        rag_path = absolute_path(f"rag/{account_id}_{media_id}.txt")
+        rag_key = f"rag/{account_id}_{media_id}.txt"
+        rag_path = absolute_path(rag_key)
         if rag_path.exists():
             os.remove(rag_path)
+        record_deletion(rag_key)
     except OSError as e:
         logger.warning(f"rag txt remove failed: {e}")
     # Qdrant
@@ -448,9 +451,11 @@ async def delete_talent(
         except Exception as e:
             logger.warning(f"qdrant delete failed (media={media_id}): {e}")
         try:
-            rag_path = absolute_path(f"rag/{account_id}_{media_id}.txt")
+            rag_key = f"rag/{account_id}_{media_id}.txt"
+            rag_path = absolute_path(rag_key)
             if rag_path.exists():
                 os.remove(rag_path)
+            record_deletion(rag_key)
         except OSError as e:
             logger.warning(f"rag txt remove failed (media={media_id}): {e}")
 
@@ -459,6 +464,8 @@ async def delete_talent(
         talent_dir = absolute_path(f"talent/{account_id}")
         if talent_dir.exists():
             shutil.rmtree(talent_dir)
+        # 디렉토리 통째로 — 반대편에서도 같은 디렉토리를 지운다
+        record_deletion(f"talent/{account_id}")
     except OSError as e:
         logger.warning(f"talent dir remove failed (account={account_id}): {e}")
 
