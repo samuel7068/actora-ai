@@ -52,6 +52,12 @@ def _scene_embed_text(scene: dict[str, Any]) -> str:
 
     parts: list[str] = [
         _text(scene.get("scene_summary")),
+        # 배역·상황 — 사건으로 찾는 검색("죽어가는 공주", "임종 장면")에 걸리게 한다
+        _text((scene.get("role") or {}).get("role_label")),
+        _text((scene.get("role") or {}).get("situation")),
+        _text((scene.get("role") or {}).get("character_type")),
+        _text((scene.get("role") or {}).get("occupation")),
+        _text((scene.get("role") or {}).get("action")),
         _joined(scene.get("search_keywords")),
         _joined(scene.get("mood_keywords")),
         # 감정 — 검색의 핵심 축
@@ -117,8 +123,13 @@ def _scene_payload(
         "mood_keywords": scene.get("mood_keywords") or [],
         "age_range": _normalize_age_range(role.get("age_range")),
         "gender_appearance": role.get("gender_appearance"),
+        # "죽어가는 공주" 처럼 신분+상황이 합쳐진 배역 이름 — 검색·표시의 핵심
+        "role_label": role.get("role_label"),
         "character_type": role.get("character_type"),
         "occupation": role.get("occupation"),
+        # 상황·행위 — "죽어가는 연기" 같은 사건 검색의 핵심
+        "situation": role.get("situation"),
+        "action": role.get("action"),
         "period": era.get("period"),
         "setting": era.get("setting"),
         "image_type": appearance.get("image_type"),

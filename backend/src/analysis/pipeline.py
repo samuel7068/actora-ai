@@ -79,29 +79,68 @@ def normalize_video(
     target_fps: int = 30,
     max_height: int = 1080,
     crf: int = 21,
-    preset: str = "medium",
+    preset: str = "veryfast",
 ) -> dict[str, Any]:
     """ffmpeg 로 fps/해상도/코덱 정규화 (영구 저장본).
 
     - 가로 비율 유지하며 높이를 max_height 로 제한 (작으면 그대로, 짝수 강제)
     - target_fps 초과면 다운샘플, 미만이면 유지
-    - H.264 (CRF 21, preset medium) + AAC 128k + faststart
-    - 결과 컨테이너: MP4
+    - H.264 + AAC 128k + faststart, 결과 컨테이너 MP4
 
-    화질/용량 균형: 1080p · CRF 21 · medium 은 캐스팅 영상 품질에 충분.
+    **이미 조건을 만족하는 영상은 재인코딩하지 않고 영상 스트림을 그대로 복사한다.**
+    소프트웨어 인코딩(libx264)은 이 파이프라인에서 가장 무거운 작업이라,
+    코어가 적은 서버에서는 이 한 가지로 수십 초가 줄어든다.
+    오디오만 aac 로 맞추는데, 오디오 인코딩은 영상에 비해 거의 공짜다.
+
+    preset 은 veryfast — medium 대비 2~3배 빠르고 용량만 조금 늘어난다.
+    캐스팅 영상 품질에는 영향이 없다.
+
+    반환값에 `reencoded` 를 담아 어느 경로를 탔는지 알 수 있게 한다.
     """
-    cmd = [
-        "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
-        "-i", str(src),
-        # min(현재높이, max_height) 로 다운스케일, 가로는 짝수 강제 (-2)
-        "-vf", f"scale=-2:'min({max_height},ih)',fps='min({target_fps},source_fps)'",
-        "-c:v", "libx264", "-preset", preset, "-crf", str(crf),
-        "-c:a", "aac", "-b:a", "128k",
-        "-movflags", "+faststart",
-        str(dst),
-    ]
+    info = probe_video(src)
+    v = info.get("video") or {}
+    height = v.get("height") or 0
+    fps = v.get("fps_avg") or v.get("fps_r") or 0.0
+    codec = (v.get("codec") or "").lower()
+    container = (info.get("format_name") or "").lower()
+
+    # 재인코딩 없이 넘어갈 수 있는 조건 — 하나라도 어긋나면 다시 인코딩한다
+    can_copy = (
+        codec == "h264"
+        and 0 < height <= max_height
+        and 0 < fps <= target_fps + 0.5
+        and "mp4" in container
+    )
+
+    if can_copy:
+        cmd = [
+            "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+            "-i", str(src),
+            "-c:v", "copy",          # 영상은 그대로 — 여기서 시간을 아낀다
+            "-c:a", "aac", "-b:a", "128k",
+            "-movflags", "+faststart",
+            str(dst),
+        ]
+    else:
+        cmd = [
+            "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+            "-i", str(src),
+            # min(현재높이, max_height) 로 다운스케일, 가로는 짝수 강제 (-2)
+            "-vf", f"scale=-2:'min({max_height},ih)',fps='min({target_fps},source_fps)'",
+            "-c:v", "libx264", "-preset", preset, "-crf", str(crf),
+            "-c:a", "aac", "-b:a", "128k",
+            "-movflags", "+faststart",
+            str(dst),
+        ]
+
     subprocess.run(cmd, capture_output=True, check=True)
-    return probe_video(dst)
+    logger.info(
+        f"정규화: {'스트림 복사' if can_copy else f'재인코딩(preset={preset})'} "
+        f"— 원본 {height}p/{fps:.1f}fps/{codec or '?'}"
+    )
+    out = probe_video(dst)
+    out["reencoded"] = not can_copy
+    return out
 
 
 # ─────────────────────────────────────────────────────────
@@ -535,7 +574,22 @@ def summarize_media_scenes(
         start = sc.get("scene_start_sec")
         end = sc.get("scene_end_sec")
         when = f" ({start}~{end}초)" if start is not None and end is not None else ""
-        lines.append(f"- {sc.get('scene_id')}{when}: {sc['scene_summary'].strip()}")
+
+        # 요약이 "무슨 역·무슨 사건" 을 담으려면 role 정보도 같이 줘야 한다.
+        # scene_summary 만 넘기면 외형·감정만 남고 상황이 사라진다.
+        role = sc.get("role") or {}
+        tags = [
+            role.get("role_label"),
+            role.get("situation"),
+            role.get("character_type"),
+            role.get("occupation"),
+            role.get("action"),
+        ]
+        tag = " / ".join(t.strip() for t in tags if isinstance(t, str) and t.strip())
+        prefix = f"[{tag}] " if tag else ""
+        lines.append(
+            f"- {sc.get('scene_id')}{when}: {prefix}{sc['scene_summary'].strip()}"
+        )
 
     from openai import OpenAI
     from src.analysis.prompts import get_prompt

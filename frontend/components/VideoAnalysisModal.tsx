@@ -188,7 +188,7 @@ export default function VideoAnalysisModal({ open, onClose, accountId }: Props) 
             ok: !ev.error,
             meta:
               ev.target_identified === false
-                ? "인재 미확인"
+                ? "얼굴 불일치"
                 : typeof ev.target_similarity === "number"
                   ? `얼굴 일치 ${ev.target_similarity.toFixed(2)}`
                   : undefined,
@@ -491,7 +491,7 @@ export default function VideoAnalysisModal({ open, onClose, accountId }: Props) 
                               {it.meta && (
                                 <span
                                   className={
-                                    it.meta === "인재 미확인"
+                                    it.meta === "얼굴 불일치"
                                       ? "text-[10px] px-1.5 py-0.5 rounded-full bg-zinc-100 text-zinc-500"
                                       : "text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700"
                                   }

@@ -144,6 +144,10 @@ async def _run_sync(func, *args, **kwargs):
     return await asyncio.to_thread(func, *args, **kwargs)
 
 
+# 장면별 GPT 분석 동시 실행 수. 대부분 응답 대기라 병렬이 효과적이지만,
+# 너무 올리면 OpenAI 레이트리밋(429)에 걸린다.
+SCENE_CONCURRENCY = 5
+
 # scene 당 후보 프레임 수 — 장면 중앙에서 인재가 뒤돌아 있거나 화면 밖일 때를
 # 대비해 여러 시점을 뽑고, 단계 3.5 가 그중 인재가 가장 잘 잡힌 것을 대표로 삼는다.
 KEYFRAME_SAMPLES_PER_SCENE = 3
@@ -156,6 +160,7 @@ def _profile_image_paths(talent: TalentMaster) -> list[str]:
         urls = [talent.profile_image_url]
 
     paths: list[str] = []
+    missing: list[str] = []
     for url in urls:
         if not isinstance(url, str) or not url.strip():
             continue
@@ -167,6 +172,17 @@ def _profile_image_paths(talent: TalentMaster) -> list[str]:
         path = absolute_path(f"talent/{talent.account_id}/profile/{filename}")
         if path.exists():
             paths.append(str(path))
+        else:
+            missing.append(str(path))
+
+    # DB 의 URL 이 가리키는 파일이 없으면 얼굴 임베딩이 조용히 건너뛰어진다.
+    # (프로필 사진을 여러 번 올려 URL 과 실제 파일이 어긋나는 경우)
+    # 그 상태를 로그로 드러내야 원인을 찾을 수 있다.
+    if missing:
+        logger.warning(
+            f"프로필 사진 파일 없음 {len(missing)}건 (account={talent.account_id}) "
+            f"— DB URL 과 실제 파일이 어긋남: {missing[:3]}"
+        )
     return paths
 
 
@@ -180,7 +196,17 @@ async def _ensure_face_embeddings(
     """
     paths = _profile_image_paths(talent)
     if not paths:
-        return None, {"source": "none", "reason": "NO_PROFILE_IMAGE"}
+        registered = len(talent.profile_image_urls or [])
+        logger.warning(
+            f"얼굴 임베딩 생략 (account={talent.account_id}): 사용할 프로필 사진이 없음 "
+            f"— DB 등록 {registered}건, 디스크에서 찾은 파일 0건. "
+            f"이 상태에서는 영상에서 인재를 특정할 수 없다."
+        )
+        return None, {
+            "source": "none",
+            "reason": "NO_PROFILE_IMAGE",
+            "registered_urls": registered,
+        }
 
     digest = source_hash(paths)
     cached = talent.face_embeddings
@@ -207,6 +233,16 @@ async def _ensure_face_embeddings(
         await db.rollback()
         logger.warning(f"face_embeddings 저장 실패 (account_id={talent.account_id}): {e}")
 
+    items, failed = result.get("items") or [], result.get("failed") or []
+    if failed:
+        logger.warning(
+            f"프로필 사진에서 얼굴 추출 실패 {len(failed)}건 "
+            f"(account={talent.account_id}): {failed}"
+        )
+    logger.info(
+        f"프로필 얼굴 임베딩 계산 (account={talent.account_id}): "
+        f"사진 {len(paths)}장 → 참조 {len(items)}개"
+    )
     return result, {
         "source": "computed",
         "profile_image_count": len(paths),
@@ -622,37 +658,56 @@ async def _analyze(
                 await db.flush()  # media_id 발급 (commit 안 함)
                 media_id = row.talent_media_id
 
-                # 2) 단계 6 — GPT-4V scene 분석
-                for sc_idx, sc in enumerate(scenes, start=1):
-                    if emit:
-                        emit({
-                            "type": "scene_start",
-                            "index": sc_idx,
-                            "total": len(scenes),
-                            "scene_id": sc["scene_id"],
-                            "start_sec": sc.get("start_sec"),
-                            "end_sec": sc.get("end_sec"),
-                        })
-                    try:
-                        scene_json = await _run_sync(
-                            analyze_scene_with_gpt,
-                            account_id=target_account_id,
-                            talent_media_id=media_id,
-                            scene=sc,
-                            keyframe=keyframe_by_scene.get(sc["scene_id"]),
-                            stt_segments=stt_segments,
-                            audio_features=audio_features_by_scene.get(sc["scene_id"]),
-                            openai_api_key=config.OPENAI_API_KEY,
-                            main_category=talent.main_category,
-                        )
-                        rag_scenes.append(scene_json)
-                        # 장면이 수십 개면 줄마다 남기면 로그가 넘친다 → 10개 단위로
-                        if sc_idx % 10 == 0 or sc_idx == len(scenes):
-                            logger.info(f"[rag_json] 장면 분석 {sc_idx}/{len(scenes)}")
+                # 2) 단계 6 — 장면별 GPT 분석 (병렬)
+                #
+                # 각 호출은 대부분 **응답 대기** 라 순차로 돌리면 장면 수 × 응답시간이
+                # 그대로 총 시간이 된다 (70장면이면 수 분). 동시에 여러 개를 던지면
+                # 대기 시간이 겹쳐 그만큼 줄어든다 — CPU 사양과 무관한 개선이다.
+                # 동시 실행 수는 OpenAI 레이트리밋을 고려해 제한한다.
+                sem = asyncio.Semaphore(SCENE_CONCURRENCY)
+                done_count = 0
+
+                async def analyze_one(idx: int, sc: dict[str, Any]):
+                    nonlocal done_count
+                    async with sem:
+                        if emit:
+                            emit({
+                                "type": "scene_start",
+                                "index": idx,
+                                "total": len(scenes),
+                                "scene_id": sc["scene_id"],
+                                "start_sec": sc.get("start_sec"),
+                                "end_sec": sc.get("end_sec"),
+                            })
+                        try:
+                            scene_json = await _run_sync(
+                                analyze_scene_with_gpt,
+                                account_id=target_account_id,
+                                talent_media_id=media_id,
+                                scene=sc,
+                                keyframe=keyframe_by_scene.get(sc["scene_id"]),
+                                stt_segments=stt_segments,
+                                audio_features=audio_features_by_scene.get(sc["scene_id"]),
+                                openai_api_key=config.OPENAI_API_KEY,
+                                main_category=talent.main_category,
+                            )
+                        except Exception as e:
+                            errors.append(f"{sc['scene_id']}: {type(e).__name__}: {e}")
+                            scene_json = {
+                                "scene_id": sc["scene_id"],
+                                "error": f"{type(e).__name__}: {e}",
+                            }
+
+                        # 완료 순서는 뒤섞이므로 "몇 개 끝났는지" 로 진행률을 센다
+                        done_count += 1
+                        if done_count % 10 == 0 or done_count == len(scenes):
+                            logger.info(
+                                f"[rag_json] 장면 분석 {done_count}/{len(scenes)}"
+                            )
                         if emit:
                             emit({
                                 "type": "scene",
-                                "index": sc_idx,
+                                "index": idx,
                                 "total": len(scenes),
                                 "scene_id": sc["scene_id"],
                                 "start_sec": sc.get("start_sec"),
@@ -664,20 +719,13 @@ async def _analyze(
                                 "target_identified": scene_json.get("target_identified"),
                                 "target_similarity": scene_json.get("target_similarity"),
                             })
-                    except Exception as e:
-                        errors.append(f"{sc['scene_id']}: {type(e).__name__}: {e}")
-                        if emit:
-                            emit({
-                                "type": "scene",
-                                "index": sc_idx,
-                                "total": len(scenes),
-                                "scene_id": sc["scene_id"],
-                                "error": f"{type(e).__name__}: {e}",
-                            })
-                        rag_scenes.append({
-                            "scene_id": sc["scene_id"],
-                            "error": f"{type(e).__name__}: {e}",
-                        })
+                        return idx, scene_json
+
+                analyzed = await asyncio.gather(
+                    *(analyze_one(i, sc) for i, sc in enumerate(scenes, start=1))
+                )
+                # 장면 순서대로 되돌린다 — RAG 저장·요약은 시간순이어야 읽힌다
+                rag_scenes.extend(js for _, js in sorted(analyzed, key=lambda x: x[0]))
 
                 # 3) Qdrant 적재 — 무결성 핵심. 성공(>=1건)해야 이후 DB·영상 확정.
                 indexed_count = await index_scenes(
