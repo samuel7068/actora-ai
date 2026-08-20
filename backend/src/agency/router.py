@@ -151,6 +151,15 @@ async def search_talents(
 
     config = get_settings()
 
+    # 검색 문장을 벡터로 바꿔야 하므로 임베딩 API 키가 필수다.
+    # 설정 누락을 500 으로 흘리면 "검색 실패" 로만 보여 원인 파악이 어렵다
+    # → 503 + 명확한 코드로 알리고, DB 조회에 들어가기 전에 끊는다.
+    if not config.OPENAI_API_KEY:
+        logger.error("검색 불가: OPENAI_API_KEY 미설정 (.env 확인 필요)")
+        raise HTTPException(
+            status_code=503, detail="SEARCH_UNAVAILABLE:OPENAI_API_KEY_MISSING"
+        )
+
     # ── 1) LLM 파싱 (나이·키·몸무게·특기·언어) ──
     cond = await asyncio.to_thread(parse_search_query, q, config.OPENAI_API_KEY)
     cond["gender"] = None  # 명시 성별 필터가 authoritative
@@ -229,12 +238,19 @@ async def search_talents(
     # 벡터 검색은 검색 문장 전체로. (의미 단어만 떼면 "수다스런" 같은 단어는 임베딩이
     #  빈약해져 유사도가 불안정 — 전체 문장이 맥락이 풍부해 더 안정적.)
     # scene 단위라 한 인재가 여러 건 나올 수 있으므로 넉넉히 받아 dedup 후 trim.
-    raw = await search_scenes(
-        q,
-        limit=limit * 5,
-        openai_api_key=config.OPENAI_API_KEY,
-        query_filter=qfilter,
-    )
+    try:
+        raw = await search_scenes(
+            q,
+            limit=limit * 5,
+            openai_api_key=config.OPENAI_API_KEY,
+            query_filter=qfilter,
+        )
+    except Exception as e:
+        # 임베딩 API 오류 / 레이트리밋 / Qdrant 장애 — 클라이언트 잘못이 아니므로 503.
+        logger.exception("RAG 벡터 검색 실패")
+        raise HTTPException(
+            status_code=503, detail=f"SEARCH_BACKEND_ERROR:{type(e).__name__}"
+        ) from e
 
     # ── 인재(account) 단위 중복 제거 — 같은 인재의 여러 scene 중 최고 점수 1건만 ──
     # raw 는 유사도 내림차순이므로 먼저 만난 account 가 그 인재의 최고 점수 scene.

@@ -233,8 +233,26 @@ export default function TalentSearchView() {
         height: heightRange,
         roleAge: roleAgeRange,
       });
-    } catch {
-      setErr("검색에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+    } catch (e) {
+      // 서버 설정 누락(키 미설정)과 일시 장애를 구분해 알린다.
+      // 전부 "검색 실패" 로 뭉개면 원인이 서버 설정인지 일시 오류인지 알 수 없다.
+      const res = (
+        e as { response?: { status?: number; data?: { detail?: unknown } } }
+      )?.response;
+      const detail = typeof res?.data?.detail === "string" ? res.data.detail : "";
+      if (detail.includes("OPENAI_API_KEY_MISSING")) {
+        setErr(
+          "AI 검색 기능이 서버에 설정되지 않았습니다. 관리자에게 문의해 주세요.",
+        );
+      } else if (res?.status === 503) {
+        setErr(
+          "AI 검색 서버가 일시적으로 응답하지 않습니다. 잠시 후 다시 시도해 주세요.",
+        );
+      } else if (res?.status === 403) {
+        setErr("인재 탐색은 에이전시·관리자 전용 기능입니다.");
+      } else {
+        setErr("검색에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+      }
     } finally {
       setLoading(false);
     }
