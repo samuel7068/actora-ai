@@ -13,6 +13,13 @@ Thumbs.db
 .env.*
 !.env.*.example
 
+# ─── 업로드된 미디어 (git 으로 관리하지 않음) ─────────────
+# 저장소가 무거워지고, 컨테이너(root)가 만든 디렉토리와 git(호스트 사용자)이
+# 충돌해 pull 이 Permission denied 로 실패한다.
+# 서버로는 rsync 로 전달한다:
+#   rsync -avz backend/uploads/ ubuntu@<서버>:/app/actora/backend/uploads/
+backend/uploads/
+
 # ─── Logs ────────────────────────────────────────────
 logs/
 *.log
