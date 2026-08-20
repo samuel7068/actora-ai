@@ -35,6 +35,8 @@ openai = "^1.54.0"
 librosa = "^0.10.0"
 insightface = "^1.0.1"
 onnxruntime = "^1.29.0"
+boto3 = "^1.43.76"
+pillow = "^12.3.0"
 
 [build-system]
 requires = ["poetry-core"]

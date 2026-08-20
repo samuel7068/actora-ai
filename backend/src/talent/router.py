@@ -1,6 +1,4 @@
 import logging
-import os
-import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
@@ -14,17 +12,21 @@ from fastapi import (
     Query,
     UploadFile,
 )
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import RedirectResponse, StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.config import get_settings
 from src.database import get_db
 from src.account.models import AccountMaster
 from src.admin.models import AdminMaster
 from src.auth.deps import get_current_account
 from src.auth.security import decode_access_token
-from src.media.service import absolute_path
+from src.media.service import (
+    profile_relative_key,
+    profile_thumb_key,
+    save_profile_photo,
+)
+from src.storage import get_storage
 from src.talent.models import TalentMaster
 from src.talent.schemas import TalentProfileResponse, TalentProfileUpdateRequest
 
@@ -32,22 +34,8 @@ logger = logging.getLogger(__name__)
 
 talent_profile_router = APIRouter()
 
-# 프로필 사진 저장/검증
-_PROFILE_PHOTO_MIME = {
-    "image/jpeg": "jpg",
-    "image/png": "png",
-    "image/webp": "webp",
-    "image/gif": "gif",
-}
-# 스마트폰·DSLR 원본 사진이 10~30MB 라 10MB 로는 자주 막힌다.
-# 상위 경로(nginx 600M, Next 프록시 500mb)는 여유가 충분하다.
-_MAX_PROFILE_PHOTO_BYTES = 30 * 1024 * 1024  # 30 MB
-
-def _profile_relative_key(account_id: int, filename: str) -> str:
-    return f"talent/{account_id}/profile/{filename}"
-
-def _profile_public_url(account_id: int, filename: str) -> str:
-    return f"/api/talent/profile-photo/{account_id}/{filename}"
+# 프로필 사진 저장/검증 로직은 src/media/service.py 에 모여 있다
+# (talent 셀프 업로드와 admin 대행 업로드가 같은 코드를 쓰도록)
 
 def _mime_from_filename(filename: str) -> str:
     ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
@@ -189,42 +177,9 @@ async def upload_profile_photo(
     if account.account_type != "TALENT":
         raise HTTPException(status_code=403, detail="TALENT_ONLY")
 
-    if not file.content_type or file.content_type.lower() not in _PROFILE_PHOTO_MIME:
-        raise HTTPException(
-            status_code=400, detail=f"UNSUPPORTED_MIME:{file.content_type}"
-        )
-
-    ext = _PROFILE_PHOTO_MIME[file.content_type.lower()]
-    filename = f"{uuid.uuid4().hex}.{ext}"
-    relative_key = _profile_relative_key(account.account_id, filename)
-    dest_path = absolute_path(relative_key)
-    dest_path.parent.mkdir(parents=True, exist_ok=True)
-
-    total = 0
-    CHUNK = 1024 * 1024
-    with dest_path.open("wb") as f:
-        while True:
-            chunk = await file.read(CHUNK)
-            if not chunk:
-                break
-            total += len(chunk)
-            if total > _MAX_PROFILE_PHOTO_BYTES:
-                f.close()
-                try:
-                    os.remove(dest_path)
-                except OSError:
-                    pass
-                raise HTTPException(
-                    status_code=413,
-                    detail=f"FILE_TOO_LARGE:max_bytes={_MAX_PROFILE_PHOTO_BYTES}",
-                )
-            f.write(chunk)
-
-    return {
-        "url": _profile_public_url(account.account_id, filename),
-        "filename": filename,
-        "size": total,
-    }
+    # 검증·리사이즈·업로드는 service 가 담당한다 (admin 대행 업로드와 같은 코드)
+    filename, url, total = await save_profile_photo(file, account.account_id)
+    return {"url": url, "filename": filename, "size": total}
 
 
 # ─────────────────────────────────────────────────────────
@@ -235,6 +190,7 @@ async def upload_profile_photo(
 async def get_profile_photo(
     account_id: int,
     filename: str,
+    original: bool = Query(default=False, description="1이면 리사이즈 전 원본"),
     authorization: Optional[str] = Header(default=None),
     token: Optional[str] = Query(default=None),
 ):
@@ -253,21 +209,33 @@ async def get_profile_photo(
     if "/" in filename or ".." in filename:
         raise HTTPException(status_code=400, detail="INVALID_FILENAME")
 
-    relative_key = _profile_relative_key(account_id, filename)
-    mime = _mime_from_filename(filename)
-    config = get_settings()
+    store = get_storage()
 
-    if config.XACCEL_PREFIX:
-        internal_path = f"{config.XACCEL_PREFIX.rstrip('/')}/{relative_key}"
-        return Response(
-            status_code=200,
-            headers={
-                "X-Accel-Redirect": internal_path,
-                "Content-Type": mime,
-            },
+    # 기본은 썸네일. 원본(2MB+)을 목록·카드에 그대로 내리면 전송량이 빨리 찬다.
+    # 얼굴 임베딩처럼 해상도가 필요한 쪽은 백엔드가 저장소에서 직접 원본을 읽는다.
+    # ?original=1 은 사람이 원본을 확인해야 할 때를 위한 탈출구.
+    key = profile_relative_key(account_id, filename)
+    mime = _mime_from_filename(filename)
+    if not original:
+        thumb_key = profile_thumb_key(account_id, filename)
+        # 썸네일 도입 전에 올린 사진에는 썸네일이 없다 → 원본으로 폴백
+        if store.exists(thumb_key):
+            key, mime = thumb_key, "image/webp"
+
+    # S3 계열: 브라우저가 버킷에서 직접 받아가게 서명 URL 로 넘긴다.
+    # 사진 바이트가 백엔드를 거치지 않으므로 워커를 잡아 두지 않는다.
+    signed = store.presigned_url(key, content_type=mime)
+    if signed:
+        # 302 는 캐시되면 만료된 URL 이 재사용되므로 캐시를 막는다
+        return RedirectResponse(
+            signed, status_code=307, headers={"Cache-Control": "no-store"}
         )
 
-    path = absolute_path(relative_key)
-    if not path.exists():
-        raise HTTPException(status_code=404, detail="FILE_NOT_FOUND_ON_DISK")
-    return FileResponse(path, media_type=mime)
+    # 로컬 디스크 폴백
+    if not store.exists(key):
+        logger.error(
+            f"프로필 사진 없음 → 404. key={key} account={account_id} "
+            f"backend={getattr(store, 'backend', '?')}"
+        )
+        raise HTTPException(status_code=404, detail="FILE_NOT_FOUND")
+    return StreamingResponse(store.iter_chunks(key), media_type=mime)

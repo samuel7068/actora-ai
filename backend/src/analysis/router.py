@@ -48,7 +48,8 @@ from src.analysis.schemas import AnalyzeDebugResponse, StageInfo
 from src.auth.deps import get_current_account
 from src.config import get_settings
 from src.database import get_db
-from src.media.service import absolute_path
+from src.media.service import save_portfolio_thumbnail
+from src.storage import StorageError, get_storage
 from src.talent.models import TalentMaster, TalentMedia
 
 logger = logging.getLogger(__name__)
@@ -153,13 +154,57 @@ SCENE_CONCURRENCY = 5
 KEYFRAME_SAMPLES_PER_SCENE = 3
 
 
-def _profile_image_paths(talent: TalentMaster) -> list[str]:
-    """talent.profile_image_urls → 로컬 파일 경로 목록 (존재하는 것만)."""
+def _poster_frame_path(keyframes: list[dict[str, Any]]) -> Path | None:
+    """카드에 쓸 포스터로 가장 좋은 대표 프레임을 고른다.
+
+    우선순위:
+      1) 인재로 확신(target_confident)한 장면 중 유사도가 가장 높은 프레임
+      2) 인재가 잡힌(target_present) 장면 중 유사도가 가장 높은 프레임
+      3) 얼굴 식별이 없었으면 영상 앞부분을 피해 중간쯤 장면
+
+    얼굴이 보이는 프레임을 쓰면 목록에서 누구의 영상인지 바로 알 수 있다.
+    검은 화면·타이틀로 시작하는 영상이 많아 첫 프레임은 쓰지 않는다.
+    """
+    if not keyframes:
+        return None
+
+    def sim(kf: dict[str, Any]) -> float:
+        try:
+            return float(kf.get("target_similarity") or 0.0)
+        except (TypeError, ValueError):
+            return 0.0
+
+    for pick in (
+        [k for k in keyframes if k.get("target_confident")],
+        [k for k in keyframes if k.get("target_present")],
+    ):
+        if pick:
+            best = max(pick, key=sim)
+            path = best.get("file_path")
+            if path and Path(path).exists():
+                return Path(path)
+
+    # 폴백 — 중간 장면부터 실제로 존재하는 파일을 찾는다
+    order = sorted(range(len(keyframes)), key=lambda i: abs(i - len(keyframes) // 2))
+    for i in order:
+        path = keyframes[i].get("file_path")
+        if path and Path(path).exists():
+            return Path(path)
+    return None
+
+
+def _profile_image_keys(talent: TalentMaster) -> list[str]:
+    """talent.profile_image_urls → 저장소 키 목록 (실제로 있는 것만).
+
+    파일을 내려받지 않고 키만 확인한다. 얼굴 임베딩 캐시가 살아 있으면
+    사진을 받을 필요가 없기 때문이다.
+    """
     urls = list(talent.profile_image_urls or [])
     if not urls and talent.profile_image_url:
         urls = [talent.profile_image_url]
 
-    paths: list[str] = []
+    store = get_storage()
+    keys: list[str] = []
     missing: list[str] = []
     for url in urls:
         if not isinstance(url, str) or not url.strip():
@@ -169,21 +214,18 @@ def _profile_image_paths(talent: TalentMaster) -> list[str]:
         filename = url.rstrip("/").rsplit("/", 1)[-1]
         if not filename or filename in (".", ".."):
             continue
-        path = absolute_path(f"talent/{talent.account_id}/profile/{filename}")
-        if path.exists():
-            paths.append(str(path))
-        else:
-            missing.append(str(path))
+        key = f"talent/{talent.account_id}/profile/{filename}"
+        (keys if store.exists(key) else missing).append(key)
 
     # DB 의 URL 이 가리키는 파일이 없으면 얼굴 임베딩이 조용히 건너뛰어진다.
     # (프로필 사진을 여러 번 올려 URL 과 실제 파일이 어긋나는 경우)
     # 그 상태를 로그로 드러내야 원인을 찾을 수 있다.
     if missing:
         logger.warning(
-            f"프로필 사진 파일 없음 {len(missing)}건 (account={talent.account_id}) "
-            f"— DB URL 과 실제 파일이 어긋남: {missing[:3]}"
+            f"프로필 사진 없음 {len(missing)}건 (account={talent.account_id}) "
+            f"— DB URL 과 저장소 내용이 어긋남: {missing[:3]}"
         )
-    return paths
+    return keys
 
 
 async def _ensure_face_embeddings(
@@ -191,15 +233,16 @@ async def _ensure_face_embeddings(
 ) -> tuple[dict[str, Any] | None, dict[str, Any]]:
     """프로필 얼굴 임베딩을 확보 (캐시 우선, 사진이 바뀌었으면 재계산).
 
-    프로필 사진 목록의 해시를 함께 저장해 두므로, 사진이 교체되면 자동으로
-    무효화되어 다시 계산된다. 업로드 엔드포인트마다 훅을 심을 필요가 없다.
+    저장소 **키** 목록으로 지문을 만든다. 키에는 업로드 때 발급한 uuid 파일명이
+    들어 있으므로 사진을 교체하면 지문이 달라져 자동으로 무효화된다.
+    (로컬 경로로 지문을 만들면 임시 디렉토리 이름이 매번 바뀌어 캐시가 늘 빗나간다)
     """
-    paths = _profile_image_paths(talent)
-    if not paths:
+    keys = _profile_image_keys(talent)
+    if not keys:
         registered = len(talent.profile_image_urls or [])
         logger.warning(
             f"얼굴 임베딩 생략 (account={talent.account_id}): 사용할 프로필 사진이 없음 "
-            f"— DB 등록 {registered}건, 디스크에서 찾은 파일 0건. "
+            f"— DB 등록 {registered}건, 저장소에서 찾은 파일 0건. "
             f"이 상태에서는 영상에서 인재를 특정할 수 없다."
         )
         return None, {
@@ -208,20 +251,40 @@ async def _ensure_face_embeddings(
             "registered_urls": registered,
         }
 
-    digest = source_hash(paths)
+    digest = source_hash(keys)
     cached = talent.face_embeddings
     if (
         isinstance(cached, dict)
         and cached.get("source_hash") == digest
         and cached.get("items")
     ):
+        # 캐시 적중 — 사진을 내려받지 않는다
         return cached, {
             "source": "cache",
-            "profile_image_count": len(paths),
+            "profile_image_count": len(keys),
             "reference_count": len(cached["items"]),
         }
 
-    result = await _run_sync(embed_profile_images, paths)
+    # InsightFace 는 로컬 파일 경로를 받으므로 원본을 임시로 내려받는다.
+    # (썸네일이 아니라 원본 — 얼굴 인식 정확도는 해상도에 좌우된다)
+    with tempfile.TemporaryDirectory(prefix="actora_face_") as tmp:
+        store = get_storage()
+        paths: list[str] = []
+        for key in keys:
+            local = Path(tmp) / key.rsplit("/", 1)[-1]
+            try:
+                store.download_to(key, local)
+                paths.append(str(local))
+            except StorageError as e:
+                logger.warning(f"프로필 사진 다운로드 실패 ({key}): {e}")
+        if not paths:
+            return None, {
+                "source": "none",
+                "reason": "PROFILE_IMAGE_DOWNLOAD_FAILED",
+                "registered_urls": len(keys),
+            }
+        result = await _run_sync(embed_profile_images, paths)
+
     result["source_hash"] = digest
     result["computed_at"] = datetime.now(timezone.utc).isoformat()
 
@@ -241,13 +304,13 @@ async def _ensure_face_embeddings(
         )
     logger.info(
         f"프로필 얼굴 임베딩 계산 (account={talent.account_id}): "
-        f"사진 {len(paths)}장 → 참조 {len(items)}개"
+        f"사진 {len(keys)}장 → 참조 {len(items)}개"
     )
     return result, {
         "source": "computed",
-        "profile_image_count": len(paths),
-        "reference_count": len(result.get("items") or []),
-        "failed": result.get("failed") or [],
+        "profile_image_count": len(keys),
+        "reference_count": len(items),
+        "failed": failed,
     }
 
 
@@ -746,13 +809,26 @@ async def _analyze(
                 # 4) 여기 도달 = Qdrant 적재 성공 → 영상 영구화 + DB 확정
                 relative_key = _portfolio_relative_key(target_account_id, media_id)
                 stored_name = f"{target_account_id}_{media_id}.mp4"
-                final_path = absolute_path(relative_key)
-                final_path.parent.mkdir(parents=True, exist_ok=True)
-                shutil.move(str(normalized_path), str(final_path))
+                # 저장소로 옮긴다 (성공하면 임시파일은 정리된다)
+                file_size = get_storage().put_file(
+                    Path(normalized_path), relative_key, content_type="video/mp4"
+                )
 
                 row.media_path = relative_key
                 row.stored_file_name = stored_name
-                row.file_size = final_path.stat().st_size
+                row.file_size = file_size
+
+                # 카드 목록용 포스터 — 얼굴이 가장 잘 잡힌 대표 프레임을 쓴다.
+                # 실패해도 화면이 아이콘으로 폴백하므로 분석을 막지 않는다.
+                poster = _poster_frame_path(keyframes_data)
+                if poster:
+                    row.thumbnail_path = await _run_sync(
+                        save_portfolio_thumbnail, poster, target_account_id, media_id
+                    )
+                else:
+                    logger.warning(
+                        f"영상 포스터를 만들 대표 프레임이 없다 (media={media_id})"
+                    )
                 ai_summary = await _run_sync(
                     _build_ai_summary,
                     rag_scenes,
@@ -767,12 +843,11 @@ async def _analyze(
 
                 # RAG .txt 저장 (디버그용 — 추후 관리자 Qdrant 조회로 대체 예정)
                 rag_relative = f"rag/{target_account_id}_{media_id}.txt"
-                rag_path = absolute_path(rag_relative)
-                rag_path.parent.mkdir(parents=True, exist_ok=True)
                 import json as _json
-                rag_path.write_text(
-                    _json.dumps(rag_scenes, ensure_ascii=False, indent=2),
-                    encoding="utf-8",
+                get_storage().put_bytes(
+                    _json.dumps(rag_scenes, ensure_ascii=False, indent=2).encode("utf-8"),
+                    rag_relative,
+                    content_type="application/json; charset=utf-8",
                 )
 
                 await db.commit()  # ← Qdrant 성공 후에야 DB 확정

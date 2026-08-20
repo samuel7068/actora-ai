@@ -57,31 +57,37 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"Qdrant 초기화 실패 (계속 진행): {e}")
 
-    # 미디어 저장소 — 볼륨 마운트가 어긋나면 업로드는 되는데 재생만 안 되는
-    # (그리고 로그에 단서가 없는) 상황이 생긴다. 기동 시 한 번 상태를 남겨 둔다.
+    # 미디어 저장소 — 자격증명이나 버킷 이름이 틀리면 업로드는 시도되는데
+    # 재생만 안 되는(그리고 로그에 단서가 없는) 상황이 생긴다.
+    # 기동 시 한 번 실제로 접근해 보고 상태를 남겨 둔다.
     try:
-        from pathlib import Path
+        from src.storage import get_storage
 
-        upload_dir = Path(get_settings().UPLOAD_DIR)
-        if not upload_dir.exists():
-            logger.error(
-                f"UPLOAD_DIR 없음: {upload_dir} — 볼륨 마운트를 확인하세요. "
-                f"미디어 업로드·재생이 모두 실패합니다."
+        store = get_storage()
+        backend = getattr(store, "backend", "?")
+        keys = store.list_keys("talent")
+        movies = sum(1 for k in keys if k.endswith(".mp4"))
+        photos = sum(1 for k in keys if "/profile/" in k and "/thumb/" not in k)
+        thumbs = sum(1 for k in keys if "/profile/thumb/" in k)
+        logger.info(
+            f"미디어 저장소 확인 (backend={backend}): "
+            f"영상 {movies}개, 프로필 사진 {photos}개, 썸네일 {thumbs}개"
+        )
+        if movies == 0:
+            logger.warning(
+                "영상 파일이 0개입니다. DB 에 미디어 레코드가 있는데도 0개면 "
+                "버킷 이름·자격증명이 틀렸거나 파일이 아직 이전되지 않은 것입니다."
             )
-        else:
-            movies = len(list(upload_dir.glob("talent/*/portfolio/*.mp4")))
-            photos = len(list(upload_dir.glob("talent/*/profile/*")))
+        if photos and thumbs < photos:
             logger.info(
-                f"미디어 저장소 확인: {upload_dir} "
-                f"(영상 {movies}개, 프로필 사진 {photos}개)"
+                f"썸네일 없는 프로필 사진 {photos - thumbs}건 — "
+                "scripts/migrate_uploads_to_s3.py 로 생성할 수 있습니다."
             )
-            if movies == 0:
-                logger.warning(
-                    "영상 파일이 0개입니다. DB 에 미디어 레코드가 있는데도 0개면 "
-                    "볼륨이 잘못된 호스트 디렉토리를 가리키고 있을 수 있습니다."
-                )
     except Exception as e:
-        logger.warning(f"미디어 저장소 점검 실패 (계속 진행): {e}")
+        logger.error(
+            f"미디어 저장소 접근 실패: {e} — "
+            "업로드·재생이 모두 실패합니다. S3_BUCKET / 자격증명을 확인하세요."
+        )
 
     try:
         yield

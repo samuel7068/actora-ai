@@ -17,7 +17,42 @@ type MediaItem = {
   view_count: number;
   is_main: boolean;
   stream_url: string;
+  /** 영상 포스터 키. 값이 있으면 /api/media/{id}/thumbnail 로 받을 수 있다 */
+  thumbnail_path?: string | null;
 };
+
+/**
+ * 영상 카드의 포스터.
+ *
+ * 분석 때 뽑아 둔 대표 프레임(얼굴이 가장 잘 잡힌 장면)을 640px WebP 로 받는다.
+ * 포스터가 아직 없는 영상이나 로드 실패 시에는 필름 아이콘으로 폴백한다 —
+ * 카드 레이아웃이 흔들리지 않도록 자리는 그대로 차지한다.
+ */
+function Poster({
+  mediaId,
+  hasThumb,
+  iconCls,
+}: {
+  mediaId: number;
+  hasThumb: boolean;
+  iconCls: string;
+}) {
+  const [failed, setFailed] = useState(false);
+
+  if (!hasThumb || failed) {
+    return <Film className={iconCls} strokeWidth={1.5} />;
+  }
+  return (
+    <img
+      src={`/api/media/${mediaId}/thumbnail`}
+      alt=""
+      loading="lazy"
+      decoding="async"
+      className="absolute inset-0 w-full h-full object-cover"
+      onError={() => setFailed(true)}
+    />
+  );
+}
 
 // 아티스트당 등록 가능한 영상 수 (관리자 대행 업로드에 적용)
 const ADMIN_MAX = 10;
@@ -184,7 +219,11 @@ export default function PortfolioPanel({
                 className="block w-full text-left"
               >
                 <div className={thumbCls}>
-                  <Film className={filmCls} strokeWidth={1.5} />
+                  <Poster
+                    mediaId={m.talent_media_id}
+                    hasThumb={Boolean(m.thumbnail_path)}
+                    iconCls={filmCls}
+                  />
                   <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 transition-colors">
                     <Play className="w-12 h-12 text-white opacity-0 group-hover:opacity-100 drop-shadow transition-opacity" />
                   </div>

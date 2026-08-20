@@ -2,30 +2,27 @@
 
 - POST /talent/me/media        : 현재 로그인된 talent 가 자기 미디어 업로드
 - GET  /talent/me/media        : 자기 미디어 목록
-- GET  /media/{media_id}       : 미디어 조회 (권한 체크 → stream 또는 X-Accel-Redirect)
+- GET  /media/{media_id}       : 미디어 조회 (권한 체크 → 서명 URL redirect 또는 stream)
 - DELETE /talent/me/media/{id} : 자기 미디어 삭제
 """
 import logging
-import os
 from pathlib import Path
 from typing import Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import RedirectResponse, StreamingResponse
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.config import get_settings
 from src.database import get_db
 from src.auth.deps import get_current_account
 from src.media.schemas import MediaInfo, MediaListResponse
 from src.analysis.rag_index import delete_media_points
 from src.media.service import (
-    record_deletion,
-    absolute_path,
     save_upload_file,
     stream_url_for,
 )
+from src.storage import get_storage
 from src.talent.models import TalentMaster, TalentMedia
 
 logger = logging.getLogger(__name__)
@@ -172,25 +169,11 @@ async def delete_my_media(
     if row.account_id != account.account_id:
         raise HTTPException(status_code=403, detail="FORBIDDEN")
 
-    # 디스크 파일 제거 (실패해도 DB 는 삭제)
-    try:
-        path = absolute_path(row.media_path)
-        if path.exists():
-            os.remove(path)
-        # 반대편(운영 서버 / 개발 PC)에서도 지우도록 대장에 남긴다
-        record_deletion(row.media_path)
-    except OSError as e:
-        logger.warning(f"media file remove failed: {e}")
-
-    # RAG .txt 제거 (uploads/rag/{account_id}_{talent_media_id}.txt) — best-effort
-    try:
-        rag_key = f"rag/{row.account_id}_{row.talent_media_id}.txt"
-        rag_path = absolute_path(rag_key)
-        if rag_path.exists():
-            os.remove(rag_path)
-        record_deletion(rag_key)
-    except OSError as e:
-        logger.warning(f"rag txt remove failed: {e}")
+    # 저장소 파일 제거 (실패해도 DB 는 삭제)
+    # 버킷을 두 환경이 공유하므로 여기서 지우면 양쪽에서 함께 사라진다.
+    store = get_storage()
+    store.delete(row.media_path)
+    store.delete(f"rag/{row.account_id}_{row.talent_media_id}.txt")
 
     # Qdrant 벡터 제거 — talent_media_id 필터로 해당 영상의 scene 포인트 일괄 삭제 (best-effort)
     try:
@@ -201,6 +184,42 @@ async def delete_my_media(
     await db.delete(row)
     await db.commit()
     return {"success": True, "deleted_id": media_id}
+
+
+# ─────────────────────────────────────────────────────────
+# GET /media/{media_id}/thumbnail — 카드 목록용 포스터
+# ─────────────────────────────────────────────────────────
+# 반드시 /{media_id} 보다 위에 선언한다 — 아래에 두면 경로가 가로채인다.
+@media_router.get("/{media_id}/thumbnail")
+async def get_media_thumbnail(
+    media_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    """영상 포스터(WebP). 없으면 404 — 화면은 아이콘으로 폴백한다."""
+    row = (
+        await db.execute(
+            select(TalentMedia).where(TalentMedia.talent_media_id == media_id)
+        )
+    ).scalar_one_or_none()
+    if not row:
+        raise HTTPException(status_code=404, detail="MEDIA_NOT_FOUND")
+    if not row.is_public:
+        raise HTTPException(status_code=401, detail="NOT_PUBLIC_AUTH_REQUIRED")
+    if not row.thumbnail_path:
+        # 포스터 도입 전에 분석한 영상 — 백필 스크립트로 만들 수 있다
+        raise HTTPException(status_code=404, detail="THUMBNAIL_NOT_GENERATED")
+
+    store = get_storage()
+    signed = store.presigned_url(row.thumbnail_path, content_type="image/webp")
+    if signed:
+        return RedirectResponse(
+            signed, status_code=307, headers={"Cache-Control": "no-store"}
+        )
+    if not store.exists(row.thumbnail_path):
+        raise HTTPException(status_code=404, detail="FILE_NOT_FOUND")
+    return StreamingResponse(
+        store.iter_chunks(row.thumbnail_path), media_type="image/webp"
+    )
 
 
 # ─────────────────────────────────────────────────────────
@@ -215,8 +234,8 @@ async def get_media(
 
     - is_public 이면 누구나
     - 비공개면 본인만 (향후 권한 정책 확장)
-    - nginx X-Accel-Redirect 환경(XACCEL_PREFIX 설정)에선 redirect 헤더만,
-      그 외엔 백엔드가 직접 FileResponse 로 stream.
+    - 저장소가 S3 계열이면 서명 URL 로 307 redirect (바이트는 백엔드를 안 거친다)
+    - 로컬 디스크 폴백이면 백엔드가 직접 stream
     """
     row = (
         await db.execute(
@@ -242,49 +261,31 @@ async def get_media(
     except Exception as e:
         logger.warning(f"view_count update failed: {e}")
 
-    config = get_settings()
+    store = get_storage()
+    mime = row.mime_type or "application/octet-stream"
 
-    if config.XACCEL_PREFIX:
-        # nginx X-Accel-Redirect — 백엔드는 헤더만 보내고 nginx 가 실제 파일 stream.
-        #
-        # 넘기기 전에 파일이 컨테이너에 보이는지 반드시 확인한다.
-        # 확인 없이 헤더만 보내면 파일이 없어도 백엔드는 200 을 남기고 nginx 만 404 를
-        # 내므로, 화면에서는 "재생 안 됨"인데 백엔드 로그에는 아무 단서가 없다.
-        # (실제로 볼륨 마운트 경로가 어긋나 이 증상을 겪었다)
-        path = absolute_path(row.media_path)
-        if not path.exists():
-            logger.error(
-                f"media {media_id} 파일 없음 → 404. "
-                f"media_path={row.media_path!r} / 확인한 경로={path} / "
-                f"UPLOAD_DIR={config.UPLOAD_DIR} — "
-                f"호스트의 uploads 디렉토리가 컨테이너에 제대로 마운트됐는지 확인할 것"
-            )
-            raise HTTPException(status_code=404, detail="FILE_NOT_FOUND_ON_DISK")
-
-        internal_path = f"{config.XACCEL_PREFIX.rstrip('/')}/{row.media_path}"
-        logger.info(
-            f"media {media_id} X-Accel → {internal_path} "
-            f"({path.stat().st_size:,} bytes)"
-        )
-        return Response(
-            status_code=200,
-            headers={
-                "X-Accel-Redirect": internal_path,
-                "Content-Type": row.mime_type or "application/octet-stream",
-            },
-        )
-
-    # 백엔드 직접 stream (Mac dev / nginx 없는 환경)
-    path = absolute_path(row.media_path)
-    if not path.exists():
-        logger.error(
-            f"media {media_id} 파일 없음 → 404. "
-            f"media_path={row.media_path!r} / 확인한 경로={path} / "
-            f"UPLOAD_DIR={config.UPLOAD_DIR}"
-        )
-        raise HTTPException(status_code=404, detail="FILE_NOT_FOUND_ON_DISK")
-    return FileResponse(
-        path,
-        media_type=row.mime_type or "application/octet-stream",
-        filename=row.original_file_name or row.stored_file_name,
+    # 서명 URL 로 302 — 영상 바이트가 백엔드를 거치지 않는다.
+    # 브라우저가 버킷에서 직접 받으므로 Range 요청(구간 탐색)도 그대로 동작하고,
+    # 긴 영상이 백엔드 워커를 점유하지 않는다.
+    signed = store.presigned_url(
+        row.media_path,
+        content_type=mime,
+        filename=row.original_file_name or row.stored_file_name or "",
     )
+    if signed:
+        logger.info(f"media {media_id} → 서명 URL 발급 (key={row.media_path})")
+        # 서명이 만료된 뒤 캐시된 302 가 재사용되면 재생이 깨진다
+        return RedirectResponse(
+            signed, status_code=307, headers={"Cache-Control": "no-store"}
+        )
+
+    # 로컬 디스크 폴백 (S3_BUCKET 미설정)
+    if not store.exists(row.media_path):
+        logger.error(
+            f"media {media_id} 파일 없음 → 404. media_path={row.media_path!r} / "
+            f"backend={getattr(store, 'backend', '?')} — "
+            "S3_BUCKET 이 설정되지 않아 로컬 디스크를 보고 있다. "
+            "반대쪽 환경에서 올린 파일이라면 이 서버에는 없다."
+        )
+        raise HTTPException(status_code=404, detail="FILE_NOT_FOUND")
+    return StreamingResponse(store.iter_chunks(row.media_path), media_type=mime)

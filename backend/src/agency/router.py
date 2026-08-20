@@ -123,6 +123,10 @@ _EMOTIONS = (
 #   조작하면 사용자가 결과를 신뢰할 수 없다.
 _EMOTION_PRIMARY_BONUS = 0.08
 _EMOTION_KEYWORD_BONUS = 0.03
+# 질의가 감정을 명시했는데 장면에 그 감정이 전혀 없으면 깎는다.
+# 보너스만 주고 감점을 안 하면, 원점수가 높은 엉뚱한 감정이 상위에 그대로 남는다.
+# ("울음을 참는 연기" 질의에 분노·억울함 장면이 47.5% 로 '적합' 으로 보이던 문제)
+_EMOTION_MISMATCH_PENALTY = 0.10
 
 
 def _scene_emotions(payload: dict[str, Any]) -> set[str]:
@@ -326,7 +330,9 @@ async def search_talents(
     # 임베딩은 감정의 *종류* 보다 *표현 방식* 에 강하게 반응한다.
     # ("울음을 참으며 눌러 담는" 질의에 분노 장면의 arc "억눌림→격앙" 이 더 잘 맞는 식)
     # 그래서 감정 종류가 맞는 장면을 위로 올린다.
-    # 화면에 보이는 유사도(score)는 그대로 두고 **정렬 순서만** 바꾼다.
+    # 보너스를 더한 rank_score 를 화면의 "적합도" 로 그대로 내려보낸다.
+    # (예전에는 score 를 보여주고 rank_score 로만 정렬해, 화면의 숫자가
+    #  47.4% → 39.0% → 47.5% 처럼 뒤죽박죽으로 보였다)
     target_emotions = set(cond.get("emotions") or [])
     if emotion:
         target_emotions.add(emotion)
@@ -335,15 +341,35 @@ async def search_talents(
         payload = r.get("payload") or {}
         matched = sorted(_scene_emotions(payload) & target_emotions)
         r["emotion_match"] = matched
+        # 주 감정으로 맞았는지 / 보조 감정으로만 맞았는지 구분해 내려보낸다.
+        # 둘 다 "분노 일치" 로만 보이면, 불안이 주 감정인 장면도 분노 연기처럼
+        # 읽혀 오해를 부른다 (점수 차이의 근거도 화면에서 보이지 않는다).
+        r["emotion_primary_match"] = payload.get("primary_emotion") in target_emotions
         bonus = 0.0
         if target_emotions:
             if payload.get("primary_emotion") in target_emotions:
                 bonus += _EMOTION_PRIMARY_BONUS
-            bonus += _EMOTION_KEYWORD_BONUS * len(matched)
-        r["rank_score"] = round(float(r.get("score") or 0.0) + bonus, 6)
+            if matched:
+                bonus += _EMOTION_KEYWORD_BONUS * len(matched)
+            else:
+                # 요구한 감정이 하나도 없다 → 캐스팅 후보로서 부적합
+                bonus -= _EMOTION_MISMATCH_PENALTY
+        # 화면에는 이 값을 "적합도" 로 보여준다 → 정렬 순서와 표시 숫자가 일치한다.
+        r["rank_score"] = round(
+            max(0.0, min(1.0, float(r.get("score") or 0.0) + bonus)), 6
+        )
 
+    # 감점까지 반영한 적합도가 임계값 미달이면 제외한다.
+    # 감정이 어긋난 결과를 "부족" 이라 붙여 보여주는 것보다 빼는 게 낫다.
+    dropped_emotion = 0
     if target_emotions:
-        raw.sort(key=lambda x: x.get("rank_score", 0.0), reverse=True)
+        before = len(raw)
+        raw = [r for r in raw if r.get("rank_score", 0.0) >= MIN_SCORE]
+        dropped_emotion = before - len(raw)
+
+    # 항상 적합도 내림차순 — 화면에 보이는 순서가 곧 이 순서다.
+    # (감정 조건이 없어도 정렬해 둔다. Qdrant 반환 순서에 의존하지 않기 위함)
+    raw.sort(key=lambda x: x.get("rank_score", 0.0), reverse=True)
 
     # ── 프로필 병합 (조건 없던 경우 여기서 조회) ──
     missing = {
@@ -408,6 +434,8 @@ async def search_talents(
         "min_score": MIN_SCORE,
         # 유사도가 낮아 제외된 인재 수 — 프론트에서 "왜 결과가 적은지" 안내에 쓴다
         "dropped_low_score": dropped_low_score,
+        # 요구한 감정이 없어 제외된 인재 수
+        "dropped_emotion_mismatch": dropped_emotion,
         "count": len(raw),
         "results": raw,
     }

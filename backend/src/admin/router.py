@@ -1,7 +1,5 @@
 """관리자 전용 API (account_type='ADMIN' 만 접근)."""
 import logging
-import os
-import shutil
 import uuid
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -17,14 +15,11 @@ from src.account.models import AccountMaster
 from src.analysis.rag_index import delete_media_points, get_media_scenes
 from src.auth.deps import get_current_account
 from src.database import get_db
-from src.media.service import absolute_path, stream_url_for
+from src.media.service import save_profile_photo, stream_url_for
 from src.talent.models import TalentMaster, TalentMedia
+from src.storage import get_storage
 from src.talent.router import (
-    _MAX_PROFILE_PHOTO_BYTES,
-    _PROFILE_PHOTO_MIME,
     _completion_rate,
-    _profile_public_url,
-    _profile_relative_key,
     _to_response,
 )
 from src.talent.schemas import TalentProfileResponse, TalentProfileUpdateRequest
@@ -114,6 +109,7 @@ async def list_all_media(
             "original_file_name": m.original_file_name,
             "ai_summary": m.ai_summary,
             "created_at": m.created_at,
+            "thumbnail_path": m.thumbnail_path,
         }
         for m, nm in rows
     ]
@@ -356,6 +352,7 @@ async def list_talent_media(
             "view_count": r.view_count,
             "is_main": r.is_main,
             "stream_url": stream_url_for(r.talent_media_id),
+            "thumbnail_path": r.thumbnail_path,
         }
         for r in rows
     ]
@@ -384,23 +381,11 @@ async def delete_talent_media(
     if row.account_id != account_id:
         raise HTTPException(status_code=400, detail="ACCOUNT_MISMATCH")
 
-    # 영상 파일
-    try:
-        path = absolute_path(row.media_path)
-        if path.exists():
-            os.remove(path)
-        record_deletion(row.media_path)
-    except OSError as e:
-        logger.warning(f"media file remove failed: {e}")
-    # RAG .txt
-    try:
-        rag_key = f"rag/{account_id}_{media_id}.txt"
-        rag_path = absolute_path(rag_key)
-        if rag_path.exists():
-            os.remove(rag_path)
-        record_deletion(rag_key)
-    except OSError as e:
-        logger.warning(f"rag txt remove failed: {e}")
+    # 영상 파일 + RAG .txt
+    # 버킷을 개발 PC 와 운영 서버가 공유하므로 여기서 지우면 양쪽에서 사라진다.
+    store = get_storage()
+    store.delete(row.media_path)
+    store.delete(f"rag/{account_id}_{media_id}.txt")
     # Qdrant
     try:
         await delete_media_points(media_id)
@@ -450,24 +435,11 @@ async def delete_talent(
             await delete_media_points(media_id)
         except Exception as e:
             logger.warning(f"qdrant delete failed (media={media_id}): {e}")
-        try:
-            rag_key = f"rag/{account_id}_{media_id}.txt"
-            rag_path = absolute_path(rag_key)
-            if rag_path.exists():
-                os.remove(rag_path)
-            record_deletion(rag_key)
-        except OSError as e:
-            logger.warning(f"rag txt remove failed (media={media_id}): {e}")
+        get_storage().delete(f"rag/{account_id}_{media_id}.txt")
 
-    # 인재 파일 디렉터리 전체 제거 (영상·썸네일·프로필 사진 = talent/{account_id}/)
-    try:
-        talent_dir = absolute_path(f"talent/{account_id}")
-        if talent_dir.exists():
-            shutil.rmtree(talent_dir)
-        # 디렉토리 통째로 — 반대편에서도 같은 디렉토리를 지운다
-        record_deletion(f"talent/{account_id}")
-    except OSError as e:
-        logger.warning(f"talent dir remove failed (account={account_id}): {e}")
+    # 아티스트 파일 전체 제거 (영상·프로필 사진·썸네일 = talent/{account_id}/ 아래)
+    removed = get_storage().delete_prefix(f"talent/{account_id}")
+    logger.info(f"계정 삭제: 파일 {removed}개 제거 (account={account_id})")
 
     # 계정 행 삭제 → talent_master / talent_media 행은 FK CASCADE 로 연쇄 삭제
     await db.delete(target)
@@ -495,35 +467,8 @@ async def upload_talent_photo(
     if not talent:
         raise HTTPException(status_code=404, detail="TALENT_NOT_FOUND")
 
-    if not file.content_type or file.content_type.lower() not in _PROFILE_PHOTO_MIME:
-        raise HTTPException(status_code=400, detail=f"UNSUPPORTED_MIME:{file.content_type}")
-
-    ext = _PROFILE_PHOTO_MIME[file.content_type.lower()]
-    filename = f"{uuid.uuid4().hex}.{ext}"
-    dest_path = absolute_path(_profile_relative_key(account_id, filename))
-    dest_path.parent.mkdir(parents=True, exist_ok=True)
-
-    total = 0
-    CHUNK = 1024 * 1024
-    with dest_path.open("wb") as f:
-        while True:
-            chunk = await file.read(CHUNK)
-            if not chunk:
-                break
-            total += len(chunk)
-            if total > _MAX_PROFILE_PHOTO_BYTES:
-                f.close()
-                try:
-                    os.remove(dest_path)
-                except OSError:
-                    pass
-                raise HTTPException(
-                    status_code=413,
-                    detail=f"FILE_TOO_LARGE:max_bytes={_MAX_PROFILE_PHOTO_BYTES}",
-                )
-            f.write(chunk)
-
-    url = _profile_public_url(account_id, filename)
+    # 검증·리사이즈·업로드는 service 가 담당한다 (아티스트 셀프 업로드와 같은 코드)
+    filename, url, _size = await save_profile_photo(file, account_id)
     talent.profile_image_urls = [url]  # 대표 사진 1장으로 설정
     await db.commit()
     return {"url": url, "filename": filename}

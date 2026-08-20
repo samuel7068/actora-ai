@@ -34,6 +34,10 @@ type SearchResult = {
   media_summary?: string | null;
   /** 질의 감정과 겹친 감정 — 이 결과가 위로 올라온 이유 */
   emotion_match?: string[];
+  /** 겹친 감정이 그 장면의 주 감정인가 (아니면 보조 감정으로만 등장) */
+  emotion_primary_match?: boolean;
+  /** 감정 일치 보너스가 반영된 최종 적합도. 결과 정렬 기준이며 화면에 이 값을 쓴다 */
+  rank_score?: number;
 };
 type Conditions = {
   age_min: number | null;
@@ -165,6 +169,8 @@ export default function TalentSearchView() {
   const [conditions, setConditions] = useState<Conditions | null>(null);
   // 유사도가 낮아 서버에서 제외된 아티스트 수 (결과가 적은 이유를 알려주기 위함)
   const [droppedLowScore, setDroppedLowScore] = useState(0);
+  // 요구한 감정이 없어 제외된 인재 수 — 결과가 적은 이유를 밝힌다
+  const [droppedEmotion, setDroppedEmotion] = useState(0);
   // 서버가 질의에서 인식한 감정 — 결과 정렬 근거를 알려준다
   const [queryEmotions, setQueryEmotions] = useState<string[]>([]);
   const [err, setErr] = useState<string | null>(null);
@@ -235,6 +241,7 @@ export default function TalentSearchView() {
         results: SearchResult[];
         conditions: Conditions;
         dropped_low_score?: number;
+        dropped_emotion_mismatch?: number;
         query_emotions?: string[];
       }>("/agency/search", {
         params: {
@@ -253,6 +260,7 @@ export default function TalentSearchView() {
       setResults(res.data.results);
       setConditions(res.data.conditions);
       setDroppedLowScore(res.data.dropped_low_score ?? 0);
+      setDroppedEmotion(res.data.dropped_emotion_mismatch ?? 0);
       setQueryEmotions(res.data.query_emotions ?? []);
       setApplied({
         category: mainCategory,
@@ -457,9 +465,17 @@ export default function TalentSearchView() {
             <div className="flex flex-wrap items-center gap-2 mb-3">
               <span className="text-sm text-white/70">
                 결과 <b className="text-white">{results.length}</b>개
-                {droppedLowScore > 0 && (
+                {(droppedLowScore > 0 || droppedEmotion > 0) && (
                   <span className="ml-1 text-white/40">
-                    (유사도 낮은 {droppedLowScore}명 제외)
+                    (
+                    {[
+                      droppedLowScore > 0 && `유사도 낮은 ${droppedLowScore}명`,
+                      droppedEmotion > 0 &&
+                        `${queryEmotions.join("·")} 없는 ${droppedEmotion}명`,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}{" "}
+                    제외)
                   </span>
                 )}
                 {queryEmotions.length > 0 && (
@@ -502,10 +518,18 @@ export default function TalentSearchView() {
             {results.length === 0 ? (
               <div className="rounded-xl border border-white/15 bg-white/5 backdrop-blur-md p-8 text-center text-white/70">
                 조건에 맞는 아티스트를 찾지 못했습니다.
-                {droppedLowScore > 0 && (
+                {(droppedLowScore > 0 || droppedEmotion > 0) && (
                   <div className="mt-2 text-sm text-white/50">
-                    유사도가 낮은 {droppedLowScore}명은 결과에서 제외했습니다.
-                    검색 문장을 바꿔 보세요.
+                    {droppedLowScore > 0 && (
+                      <>유사도가 낮은 {droppedLowScore}명</>
+                    )}
+                    {droppedLowScore > 0 && droppedEmotion > 0 && ", "}
+                    {droppedEmotion > 0 && (
+                      <>
+                        {queryEmotions.join("·")} 감정이 없는 {droppedEmotion}명
+                      </>
+                    )}
+                    은 결과에서 제외했습니다. 검색 문장을 바꿔 보세요.
                   </div>
                 )}
               </div>
@@ -552,21 +576,36 @@ export default function TalentSearchView() {
                         {/* 등급과 수치를 위아래로 — 한 줄이면 좌측 정보가 밀려 내려간다 */}
                         <div
                           className={
-                            "shrink-0 text-right leading-tight " + scoreTier(r.score).color
+                            "shrink-0 text-right leading-tight " + scoreTier(r.rank_score ?? r.score).color
                           }
                         >
                           <div className="text-[11px] font-semibold">
-                            {scoreTier(r.score).label}
+                            {scoreTier(r.rank_score ?? r.score).label}
                           </div>
                           <div className="text-sm font-bold tabular-nums">
-                            {(r.score * 100).toFixed(1)}%
+                            {((r.rank_score ?? r.score) * 100).toFixed(1)}%
                           </div>
-                          {/* 이 결과가 위로 올라온 이유 */}
-                          {r.emotion_match && r.emotion_match.length > 0 && (
-                            <div className="mt-1 text-[10px] font-medium text-emerald-300">
-                              {r.emotion_match.join("·")} 일치
-                            </div>
-                          )}
+                          {/* 순위가 오르내린 이유를 밝힌다.
+                              감정이 어긋난 결과는 감점되어 아래에 오는데, 표시가
+                              없으면 왜 낮은지 알 수 없다. */}
+                          {queryEmotions.length > 0 &&
+                            (r.emotion_match && r.emotion_match.length > 0 ? (
+                              <div
+                                className={
+                                  "mt-1 text-[10px] font-medium " +
+                                  (r.emotion_primary_match
+                                    ? "text-emerald-300"
+                                    : "text-emerald-300/60")
+                                }
+                              >
+                                {r.emotion_match.join("·")}{" "}
+                                {r.emotion_primary_match ? "주 감정" : "일부"}
+                              </div>
+                            ) : (
+                              <div className="mt-1 text-[10px] font-medium text-white/45">
+                                {queryEmotions.join("·")} 없음
+                              </div>
+                            ))}
                         </div>
                       </div>
                       {/* 카드 본문 = 영상 전체 요약. 자르지 않고 전부 보여주되,
