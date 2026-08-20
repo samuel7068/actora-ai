@@ -58,7 +58,7 @@ const EXAMPLES = [
 ];
 
 // 영상 속 **역할**의 연령대 — scene payload 의 age_range.
-// 인재의 실제 나이와 별개다 (20대 배우가 40대 엄마 역을 연기한 장면).
+// 아티스트의 실제 나이와 별개다 (20대 배우가 40대 엄마 역을 연기한 장면).
 const ROLE_AGE_OPTIONS: { value: string; label: string }[] = [
   { value: "child_actor", label: "아역 (5~7세)" },
   { value: "elementary", label: "초등 (8~12세)" },
@@ -152,7 +152,7 @@ function conditionChips(c: Conditions): string[] {
 }
 
 /**
- * 인재 탐색 화면. 화면 자체는 누구나 볼 수 있고(공용 /explore 진입),
+ * 아티스트 탐색 화면. 화면 자체는 누구나 볼 수 있고(공용 /explore 진입),
  * 검색 실행 시점에 로그인·권한(에이전시/관리자)을 요구한다.
  * 에이전시·관리자 대시보드 경로에서는 이미 가드를 통과한 상태라 그대로 통과한다.
  */
@@ -163,7 +163,7 @@ export default function TalentSearchView() {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<SearchResult[] | null>(null);
   const [conditions, setConditions] = useState<Conditions | null>(null);
-  // 유사도가 낮아 서버에서 제외된 인재 수 (결과가 적은 이유를 알려주기 위함)
+  // 유사도가 낮아 서버에서 제외된 아티스트 수 (결과가 적은 이유를 알려주기 위함)
   const [droppedLowScore, setDroppedLowScore] = useState(0);
   // 서버가 질의에서 인식한 감정 — 결과 정렬 근거를 알려준다
   const [queryEmotions, setQueryEmotions] = useState<string[]>([]);
@@ -312,19 +312,19 @@ export default function TalentSearchView() {
           AI 아티스트
         </h1>
         <p className="mt-1 text-white/80 drop-shadow">
-          <b className="text-amber-100">인재 프로필</b>로 후보를 좁히고,{" "}
+          <b className="text-amber-100">아티스트 프로필</b>로 후보를 좁히고,{" "}
           <b className="text-amber-100">영상 장면</b>에서 연기·연출된 모습을 문장으로 검색합니다.
         </p>
 
         {/* 조건 두 묶음을 좌우로 — 세로로 쌓으면 검색까지 눈이 두 번 내려간다 */}
         <div className="mt-8 grid grid-cols-1 xl:grid-cols-5 gap-4">
-        {/* ── 구역 1: 인재 프로필 — 등록된 실제 정보로 후보를 좁힌다 ── */}
+        {/* ── 구역 1: 아티스트 프로필 — 등록된 실제 정보로 후보를 좁힌다 ── */}
         <section className="xl:col-span-2 rounded-xl border border-white/15 bg-white/5 backdrop-blur-md p-4">
           <div className="flex flex-wrap items-center gap-2 mb-3">
             <span className="w-5 h-5 shrink-0 rounded-full bg-amber-100 text-zinc-900 text-[11px] font-bold flex items-center justify-center">
               1
             </span>
-            <h2 className="text-sm font-semibold text-white">인재 프로필</h2>
+            <h2 className="text-sm font-semibold text-white">아티스트 프로필</h2>
             <span className="text-xs text-white/50">
               프로필에 등록된 실제 정보 — 주 분야·성별은 필수
             </span>
@@ -501,7 +501,7 @@ export default function TalentSearchView() {
 
             {results.length === 0 ? (
               <div className="rounded-xl border border-white/15 bg-white/5 backdrop-blur-md p-8 text-center text-white/70">
-                조건에 맞는 인재를 찾지 못했습니다.
+                조건에 맞는 아티스트를 찾지 못했습니다.
                 {droppedLowScore > 0 && (
                   <div className="mt-2 text-sm text-white/50">
                     유사도가 낮은 {droppedLowScore}명은 결과에서 제외했습니다.

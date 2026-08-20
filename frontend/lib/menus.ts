@@ -77,9 +77,9 @@ export const PUBLIC_NAV_LINK_ACTIVE_CLS =
   "shadow-[0_2px_8px_-2px_rgba(0,0,0,0.35)]";
 
 // ──────────────────────────────────────────────────────────────────
-// 공용 화면(랜딩 · 인재 탐색)의 헤더 메뉴
+// 공용 화면(랜딩 · 아티스트 탐색)의 헤더 메뉴
 //   로그인했으면 맨 뒤에 '마이 페이지' 를 붙인다.
-//   랜딩과 인재 탐색이 같은 메뉴를 쓰도록 한 곳에서 만든다 —
+//   랜딩과 아티스트 탐색이 같은 메뉴를 쓰도록 한 곳에서 만든다 —
 //   화면을 옮길 때 상단 메뉴가 바뀌면 사용자가 길을 잃는다.
 // ──────────────────────────────────────────────────────────────────
 export function getPublicNavMenu(
@@ -156,7 +156,7 @@ export const AGENCY_MENU: MenuItem[] = [
   { key: "casting_register", label: "캐스팅 등록", href: "/agency/castings/new", Icon: FileText },
   { key: "casting_active", label: "진행 중 캐스팅", href: "/agency/castings", Icon: Briefcase },
   { key: "applicants", label: "지원자 관리", href: "/agency/applicants", Icon: Users },
-  { key: "favorites", label: "관심 인재", href: "/agency/favorites", Icon: Heart },
+  { key: "favorites", label: "관심 아티스트", href: "/agency/favorites", Icon: Heart },
   { key: "company_settings", label: "회사 설정", href: "/agency/settings", Icon: Building2 },
 ];
 
@@ -166,7 +166,7 @@ export const AGENCY_MENU: MenuItem[] = [
 // ──────────────────────────────────────────────────────────────────
 export const ADMIN_MENU: MenuItem[] = [
   { key: "dashboard", label: "대시보드", href: "/admin/dashboard", Icon: LayoutDashboard },
-  // 인재 등록 / 벡터 DB 조회는 대시보드 카드로 진입 (헤더 nav 에는 미노출)
+  // 아티스트 등록 / 벡터 DB 조회는 대시보드 카드로 진입 (헤더 nav 에는 미노출)
   // 추후 추가: 계정 관리, 통계, 매칭 모니터링, 시스템 설정 등
 ];
 

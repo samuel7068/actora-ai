@@ -195,7 +195,7 @@ export default function AdminTalentEditPage() {
 
       <main className="relative max-w-3xl mx-auto px-4 sm:px-6 pt-28 pb-12">
         <h1 className="text-2xl sm:text-3xl font-bold text-white drop-shadow-lg">
-          인재 프로필 수정
+          아티스트 프로필 수정
         </h1>
         <p className="mt-1 text-white/80 drop-shadow">account_id={accountId}</p>
 

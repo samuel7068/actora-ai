@@ -181,7 +181,7 @@ export default function RegisterModal({ open, onClose }: Props) {
                     <Building2 className="w-10 h-10 text-zinc-700 group-hover:text-zinc-900" strokeWidth={1.5} />
                     <div className="mt-4 font-bold text-zinc-900 text-lg">광고주·제작사</div>
                     <div className="mt-1 text-xs text-zinc-500">
-                      인재를 찾고 캐스팅을 진행하세요
+                      아티스트를 찾고 캐스팅을 진행하세요
                     </div>
                   </button>
                 </div>

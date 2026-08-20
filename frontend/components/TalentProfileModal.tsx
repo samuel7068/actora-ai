@@ -11,7 +11,7 @@ import { api, tokenStorage } from "@/lib/api";
 type Props = {
   open: boolean;
   onClose: () => void;
-  /** 관리자 대행: 대상 인재 account_id. 없으면 본인 프로필. */
+  /** 관리자 대행: 대상 아티스트 account_id. 없으면 본인 프로필. */
   accountId?: number;
 };
 

@@ -47,11 +47,11 @@ export default function AdminDashboard() {
                 strokeWidth={1.5}
               />
               <div className="mt-3 font-semibold text-base text-amber-100 drop-shadow">
-                인재 관리
+                아티스트 관리
               </div>
             </div>
             <div className="text-sm leading-relaxed text-white/80 drop-shadow">
-              등록된 전체 인재를 목록으로 조회하고 프로필을 확인합니다.
+              등록된 전체 아티스트를 목록으로 조회하고 프로필을 확인합니다.
             </div>
           </Link>
 

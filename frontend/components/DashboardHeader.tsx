@@ -22,7 +22,7 @@ type Props = {
   variant?: Variant; // light: 흰 배경 (agency/admin 기본) / dark: 메인 홈과 동일한 투명 + 흰 텍스트
   /**
    * role   : 계정 타입별 대시보드 메뉴 (기본) — 대시보드 화면용
-   * public : 랜딩과 동일한 공용 메뉴 — 공용 화면(인재 탐색 등)에서
+   * public : 랜딩과 동일한 공용 메뉴 — 공용 화면(아티스트 탐색 등)에서
    *          상단 메뉴가 바뀌지 않도록 유지한다
    */
   menu?: "role" | "public";

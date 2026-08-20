@@ -60,7 +60,7 @@ export default function AdminTalentNewPage() {
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
-  // 방금 등록한 인재 (영상 업로드 대상)
+  // 방금 등록한 아티스트 (영상 업로드 대상)
   const [registered, setRegistered] = useState<{ id: number; name: string } | null>(
     null,
   );
@@ -162,7 +162,7 @@ export default function AdminTalentNewPage() {
       <main className="relative max-w-3xl mx-auto px-4 sm:px-6 pt-28 pb-12">
         <h1 className="text-2xl sm:text-3xl font-bold text-white drop-shadow-lg flex items-center gap-2">
           <UserPlus className="w-7 h-7 text-amber-100" />
-          인재 등록
+          아티스트 등록
         </h1>
         <p className="mt-1 text-white/80 drop-shadow">
           연기자·MC 계정과 프로필을 대행 등록합니다. (영상은 등록 후 별도 업로드)

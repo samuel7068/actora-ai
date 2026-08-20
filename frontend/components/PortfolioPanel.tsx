@@ -19,7 +19,7 @@ type MediaItem = {
   stream_url: string;
 };
 
-// 인재당 등록 가능한 영상 수 (관리자 대행 업로드에 적용)
+// 아티스트당 등록 가능한 영상 수 (관리자 대행 업로드에 적용)
 const ADMIN_MAX = 10;
 
 type Variant = "dark" | "light";

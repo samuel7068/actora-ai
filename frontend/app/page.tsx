@@ -109,7 +109,7 @@ const CARDS: CardItem[] = [
   {
     Icon: UserPlus,
     title: "새로운 프로필",
-    subtitle: "신규 합류 인재",
+    subtitle: "신규 합류 아티스트",
     href: "#",
     samples: [
       "정민아 · 모델 · 24세",
@@ -223,7 +223,7 @@ export default function Home() {
   const restore = useAuth((s) => s.restore);
   const account = useAuth((s) => s.account);
 
-  // 헤더 메뉴 — 인재 탐색 화면과 **같은 구성**을 쓴다 (lib/menus.ts).
+  // 헤더 메뉴 — 아티스트 탐색 화면과 **같은 구성**을 쓴다 (lib/menus.ts).
   // 로그인 시 맨 뒤에 '마이 페이지' 가 붙는다.
   const navMenu = useMemo(() => getPublicNavMenu(account), [account]);
 
@@ -316,7 +316,7 @@ export default function Home() {
               <p className="mt-6 max-w-2xl text-base sm:text-lg text-zinc-100 drop-shadow-lg leading-relaxed">
                 광고주와 영상 제작자를 위한 모델·연기자 추천 서비스.
                 <br />
-                작품에 꼭 맞는 인재를 AI가 찾아드립니다.
+                작품에 꼭 맞는 아티스트를 AI가 찾아드립니다.
               </p>
             </motion.div>
           ) : (

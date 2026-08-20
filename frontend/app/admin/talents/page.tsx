@@ -50,7 +50,8 @@ function completionColor(rate: number | null): string {
 }
 
 // 헤더·데이터 모두 가로 중앙정렬
-const PAGE_SIZE = 20;
+// 12명을 넘으면 페이지네이션이 나타난다 (totalPages > 1 일 때만 표시)
+const PAGE_SIZE = 12;
 const TH = "px-3 py-2 text-center font-semibold text-white/70 whitespace-nowrap";
 const TD = "px-3 py-2 text-center text-white/90 whitespace-nowrap";
 
@@ -114,9 +115,9 @@ export default function AdminTalentsPage() {
     setApplied({ q: "", gender: "" });
   }, []);
 
-  // 인재 등록: 이름만 받아 생성 → 곧바로 프로필 편집 모달 오픈
+  // 아티스트 등록: 이름만 받아 생성 → 곧바로 프로필 편집 모달 오픈
   const handleCreate = useCallback(async () => {
-    const name = window.prompt("등록할 인재 이름을 입력하세요");
+    const name = window.prompt("등록할 아티스트 이름을 입력하세요");
     if (!name || !name.trim()) return;
     try {
       const res = await api.post<{ account_id: number }>("/admin/talents", {
@@ -129,7 +130,7 @@ export default function AdminTalentsPage() {
     }
   }, [fetchList]);
 
-  // 인재 완전 삭제 — 확인 모달에서 호출. 계정+프로필+영상/사진+RAG+Qdrant 전부 제거.
+  // 아티스트 완전 삭제 — 확인 모달에서 호출. 계정+프로필+영상/사진+RAG+Qdrant 전부 제거.
   const handleDelete = useCallback(async () => {
     if (!deleteTarget) return;
     setDeleting(true);
@@ -169,10 +170,10 @@ export default function AdminTalentsPage() {
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-white drop-shadow-lg flex items-center gap-2">
               <Users className="w-7 h-7 text-amber-100" />
-              인재 관리
+              아티스트 관리
             </h1>
             <p className="mt-1 text-white/80 drop-shadow">
-              등록된 전체 인재 목록입니다. 이름을 누르면 상세 프로필이 열립니다.
+              등록된 전체 아티스트 목록입니다. 이름을 누르면 상세 프로필이 열립니다.
             </p>
           </div>
           <button
@@ -181,7 +182,7 @@ export default function AdminTalentsPage() {
             className="inline-flex items-center gap-2 rounded-full bg-amber-100 text-zinc-900 px-5 py-2.5 text-sm font-semibold hover:bg-amber-200 transition-colors shadow"
           >
             <UserPlus className="w-4 h-4" />
-            인재 등록
+            아티스트 등록
           </button>
         </div>
 
@@ -238,7 +239,7 @@ export default function AdminTalentsPage() {
           <div className="rounded-xl border border-white/15 bg-white/5 backdrop-blur-md p-10 text-center text-white/70">
             {applied.q || applied.gender
               ? "검색 결과가 없습니다."
-              : "등록된 인재가 없습니다."}
+              : "등록된 아티스트가 없습니다."}
           </div>
         ) : (
           <div className="rounded-xl border border-white/15 bg-white/5 backdrop-blur-md overflow-hidden">
@@ -328,7 +329,7 @@ export default function AdminTalentsPage() {
                         <button
                           type="button"
                           onClick={() => setDeleteTarget(t)}
-                          title="인재 삭제"
+                          title="아티스트 삭제"
                           className="inline-flex items-center justify-center rounded-lg p-1.5 text-white/50 hover:text-red-300 hover:bg-red-500/15 transition-colors"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -405,7 +406,7 @@ export default function AdminTalentsPage() {
                 <AlertTriangle className="w-6 h-6 text-red-400" />
               </div>
               <div className="flex-1">
-                <h2 className="text-lg font-bold text-white">인재 삭제</h2>
+                <h2 className="text-lg font-bold text-white">아티스트 삭제</h2>
                 <p className="mt-2 text-sm leading-relaxed text-white/80">
                   <b className="text-white">{deleteTarget.name}</b>
                   <span className="text-white/50"> (ID {deleteTarget.account_id})</span>
