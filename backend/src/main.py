@@ -13,6 +13,7 @@ from src.admin.router import admin_router
 from src.agency.router import agency_router
 from src.talent.router import talent_profile_router
 from src.analysis.router import analysis_router
+from src.middleware import RequestContextMiddleware
 from src.logging_config import (
     setup_logging,
     cleanup_old_logs,
@@ -109,6 +110,10 @@ else:
 allowed_domains = config.ALLOWED_DOMAINS
 if isinstance(allowed_domains, str):
     allowed_domains = [d.strip() for d in allowed_domains.split(",")]
+
+# 요청 추적 — 가장 바깥에 두어야 CORS·예외 처리까지 포함해 기록된다.
+# (add_middleware 는 나중에 추가한 것이 더 바깥이므로 CORS 앞에 선언)
+app.add_middleware(RequestContextMiddleware)
 
 app.add_middleware(
     CORSMiddleware,

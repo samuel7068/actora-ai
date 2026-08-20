@@ -1,3 +1,4 @@
+from src.log_context import account_id_var
 from typing import Optional
 
 from fastapi import Depends, Header, HTTPException
@@ -44,4 +45,6 @@ async def get_current_account(
             )
         ).scalar_one_or_none()
 
+    # 이 요청에서 나오는 모든 로그에 acc=<id> 로 찍힌다 (로그 규칙 2)
+    account_id_var.set(str(account.account_id))
     return account, admin
