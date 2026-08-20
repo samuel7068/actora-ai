@@ -242,9 +242,27 @@ async def get_media(
     config = get_settings()
 
     if config.XACCEL_PREFIX:
-        # nginx X-Accel-Redirect — 백엔드는 헤더만 보내고 nginx 가 실제 파일 stream
-        # 예: XACCEL_PREFIX='/internal-uploads' → '/internal-uploads/talent/15/abc.jpg'
+        # nginx X-Accel-Redirect — 백엔드는 헤더만 보내고 nginx 가 실제 파일 stream.
+        #
+        # 넘기기 전에 파일이 컨테이너에 보이는지 반드시 확인한다.
+        # 확인 없이 헤더만 보내면 파일이 없어도 백엔드는 200 을 남기고 nginx 만 404 를
+        # 내므로, 화면에서는 "재생 안 됨"인데 백엔드 로그에는 아무 단서가 없다.
+        # (실제로 볼륨 마운트 경로가 어긋나 이 증상을 겪었다)
+        path = absolute_path(row.media_path)
+        if not path.exists():
+            logger.error(
+                f"media {media_id} 파일 없음 → 404. "
+                f"media_path={row.media_path!r} / 확인한 경로={path} / "
+                f"UPLOAD_DIR={config.UPLOAD_DIR} — "
+                f"호스트의 uploads 디렉토리가 컨테이너에 제대로 마운트됐는지 확인할 것"
+            )
+            raise HTTPException(status_code=404, detail="FILE_NOT_FOUND_ON_DISK")
+
         internal_path = f"{config.XACCEL_PREFIX.rstrip('/')}/{row.media_path}"
+        logger.info(
+            f"media {media_id} X-Accel → {internal_path} "
+            f"({path.stat().st_size:,} bytes)"
+        )
         return Response(
             status_code=200,
             headers={
@@ -256,6 +274,11 @@ async def get_media(
     # 백엔드 직접 stream (Mac dev / nginx 없는 환경)
     path = absolute_path(row.media_path)
     if not path.exists():
+        logger.error(
+            f"media {media_id} 파일 없음 → 404. "
+            f"media_path={row.media_path!r} / 확인한 경로={path} / "
+            f"UPLOAD_DIR={config.UPLOAD_DIR}"
+        )
         raise HTTPException(status_code=404, detail="FILE_NOT_FOUND_ON_DISK")
     return FileResponse(
         path,

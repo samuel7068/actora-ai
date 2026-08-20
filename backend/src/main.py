@@ -56,6 +56,32 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"Qdrant 초기화 실패 (계속 진행): {e}")
 
+    # 미디어 저장소 — 볼륨 마운트가 어긋나면 업로드는 되는데 재생만 안 되는
+    # (그리고 로그에 단서가 없는) 상황이 생긴다. 기동 시 한 번 상태를 남겨 둔다.
+    try:
+        from pathlib import Path
+
+        upload_dir = Path(get_settings().UPLOAD_DIR)
+        if not upload_dir.exists():
+            logger.error(
+                f"UPLOAD_DIR 없음: {upload_dir} — 볼륨 마운트를 확인하세요. "
+                f"미디어 업로드·재생이 모두 실패합니다."
+            )
+        else:
+            movies = len(list(upload_dir.glob("talent/*/portfolio/*.mp4")))
+            photos = len(list(upload_dir.glob("talent/*/profile/*")))
+            logger.info(
+                f"미디어 저장소 확인: {upload_dir} "
+                f"(영상 {movies}개, 프로필 사진 {photos}개)"
+            )
+            if movies == 0:
+                logger.warning(
+                    "영상 파일이 0개입니다. DB 에 미디어 레코드가 있는데도 0개면 "
+                    "볼륨이 잘못된 호스트 디렉토리를 가리키고 있을 수 있습니다."
+                )
+    except Exception as e:
+        logger.warning(f"미디어 저장소 점검 실패 (계속 진행): {e}")
+
     try:
         yield
     finally:
