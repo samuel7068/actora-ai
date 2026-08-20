@@ -101,6 +101,12 @@ def _has_any_condition(cond: dict) -> bool:
     )
 
 
+# 이 유사도 미만이면 프론트에서 "부족" 으로 표시되던 구간 — 캐스팅 후보로 쓸 수 없어
+# 응답에서 제외한다. TalentSearchView 의 scoreTier "보통" 하한과 같은 값이어야
+# 걸러진 기준과 표시가 어긋나지 않는다.
+MIN_SCORE = 0.35
+
+
 # scene 의 role.age_range 값 — 프롬프트(portfolio_video_analysis_*.toml)와 동일해야 한다
 _ROLE_AGE_RANGES = (
     "child_actor", "elementary", "middle_school", "high_school",
@@ -256,11 +262,17 @@ async def search_talents(
     # raw 는 유사도 내림차순이므로 먼저 만난 account 가 그 인재의 최고 점수 scene.
     seen: set[int] = set()
     deduped: list[dict] = []
+    dropped_low_score = 0
     for r in raw:
         aid = _to_int((r.get("payload") or {}).get("account_id"))
         if aid is None or aid in seen:
             continue
         seen.add(aid)
+        # raw 는 내림차순이라 이 scene 이 그 인재의 최고점.
+        # 최고점이 임계값 미달이면 캐스팅 후보로 쓸 수 없어 제외한다.
+        if float(r.get("score") or 0.0) < MIN_SCORE:
+            dropped_low_score += 1
+            continue
         deduped.append(r)
         if len(deduped) >= limit:
             break
@@ -305,6 +317,9 @@ async def search_talents(
         "gender": gender,
         "explicit": explicit,
         "scene_filter": scene_filter,
+        "min_score": MIN_SCORE,
+        # 유사도가 낮아 제외된 인재 수 — 프론트에서 "왜 결과가 적은지" 안내에 쓴다
+        "dropped_low_score": dropped_low_score,
         "count": len(raw),
         "results": raw,
     }

@@ -149,6 +149,8 @@ export default function TalentSearchView() {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<SearchResult[] | null>(null);
   const [conditions, setConditions] = useState<Conditions | null>(null);
+  // 유사도가 낮아 서버에서 제외된 인재 수 (결과가 적은 이유를 알려주기 위함)
+  const [droppedLowScore, setDroppedLowScore] = useState(0);
   const [err, setErr] = useState<string | null>(null);
   const [player, setPlayer] = useState<{ src: string; title: string | null } | null>(
     null,
@@ -203,6 +205,7 @@ export default function TalentSearchView() {
     setLoading(true);
     setResults(null);
     setConditions(null);
+    setDroppedLowScore(0);
     const age = findRange(AGE_OPTIONS, ageRange);
     const height = findRange(HEIGHT_OPTIONS, heightRange);
     try {
@@ -210,6 +213,7 @@ export default function TalentSearchView() {
         count: number;
         results: SearchResult[];
         conditions: Conditions;
+        dropped_low_score?: number;
       }>("/agency/search", {
         params: {
           q: term,
@@ -226,6 +230,7 @@ export default function TalentSearchView() {
       });
       setResults(res.data.results);
       setConditions(res.data.conditions);
+      setDroppedLowScore(res.data.dropped_low_score ?? 0);
       setApplied({
         category: mainCategory,
         gender,
@@ -427,6 +432,11 @@ export default function TalentSearchView() {
             <div className="flex flex-wrap items-center gap-2 mb-3">
               <span className="text-sm text-white/70">
                 결과 <b className="text-white">{results.length}</b>개
+                {droppedLowScore > 0 && (
+                  <span className="ml-1 text-white/40">
+                    (유사도 낮은 {droppedLowScore}명 제외)
+                  </span>
+                )}
               </span>
               {applied && (
                 <span className="px-2 py-0.5 rounded-full bg-emerald-400/25 text-emerald-100 text-[11px] font-semibold">
@@ -462,6 +472,12 @@ export default function TalentSearchView() {
             {results.length === 0 ? (
               <div className="rounded-xl border border-white/15 bg-white/5 backdrop-blur-md p-8 text-center text-white/70">
                 조건에 맞는 인재를 찾지 못했습니다.
+                {droppedLowScore > 0 && (
+                  <div className="mt-2 text-sm text-white/50">
+                    유사도가 낮은 {droppedLowScore}명은 결과에서 제외했습니다.
+                    검색 문장을 바꿔 보세요.
+                  </div>
+                )}
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
