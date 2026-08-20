@@ -1,7 +1,8 @@
 """에이전시 검색어 파서 — 자연어 → talent_master 필터 조건(LLM).
 
 search_query_parse.toml 의 [query_parse] 프롬프트로 GPT 를 호출해
-{age_min, age_max, gender, height_min, height_max, weight_min, weight_max, skills, languages}
+{age_min, age_max, gender, height_min, height_max, weight_min, weight_max,
+ skills, languages, emotions, semantic_query}
 구조를 추출한다. 실패하면 빈 dict 반환(필터 없이 진행).
 """
 from __future__ import annotations
@@ -17,7 +18,7 @@ logger = logging.getLogger(__name__)
 _INT_KEYS = (
     "age_min", "age_max", "height_min", "height_max", "weight_min", "weight_max",
 )
-_LIST_KEYS = ("skills", "languages")
+_LIST_KEYS = ("skills", "languages", "emotions")
 
 
 def _coerce(raw: dict[str, Any]) -> dict[str, Any]:

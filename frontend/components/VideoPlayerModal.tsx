@@ -1,17 +1,58 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { X } from "lucide-react";
-import { useEffect } from "react";
+import { ChevronDown, ChevronUp, X } from "lucide-react";
+import { useEffect, useState } from "react";
 
 type Props = {
   open: boolean;
   onClose: () => void;
   src: string | null;
   title?: string | null;
+  /** AI 분석 요약. 길어서 접어 두고 펼쳐 보게 한다 (title 에 넣으면 1줄로 잘린다) */
+  summary?: string | null;
 };
 
-export default function VideoPlayerModal({ open, onClose, src, title }: Props) {
+/** 분석 요약 — 기본 3줄, 펼치면 스크롤. src 를 key 로 주어 영상이 바뀌면 접힌 상태로 초기화된다. */
+function SummaryBlock({ text }: { text: string }) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <div className="mt-2">
+      <p
+        className={
+          expanded
+            ? "text-sm leading-relaxed text-white/80 max-h-48 overflow-y-auto pr-1 select-text"
+            : "text-sm leading-relaxed text-white/80 line-clamp-3 select-text"
+        }
+      >
+        {text}
+      </p>
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className="mt-1.5 inline-flex items-center gap-1 text-xs text-white/50 hover:text-white/80 transition-colors"
+      >
+        {expanded ? (
+          <>
+            <ChevronUp className="w-3.5 h-3.5" /> 접기
+          </>
+        ) : (
+          <>
+            <ChevronDown className="w-3.5 h-3.5" /> 분석 내용 전체 보기
+          </>
+        )}
+      </button>
+    </div>
+  );
+}
+
+export default function VideoPlayerModal({
+  open,
+  onClose,
+  src,
+  title,
+  summary,
+}: Props) {
   // ESC 닫기
   useEffect(() => {
     if (!open) return;
@@ -48,16 +89,20 @@ export default function VideoPlayerModal({ open, onClose, src, title }: Props) {
             >
               <X className="w-5 h-5" />
             </button>
-            {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
             <video
               src={src}
               controls
               autoPlay
-              className="w-full max-h-[85vh] bg-black"
+              className="w-full max-h-[70vh] bg-black"
             />
-            {title && (
-              <div className="px-4 py-3 text-sm text-white/90 bg-zinc-900 truncate">
-                {title}
+            {(title || summary) && (
+              <div className="px-4 py-3 bg-zinc-900">
+                {title && (
+                  <div className="text-sm font-semibold text-white truncate">
+                    {title}
+                  </div>
+                )}
+                {summary && <SummaryBlock key={src} text={summary} />}
               </div>
             )}
           </motion.div>

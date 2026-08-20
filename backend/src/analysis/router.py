@@ -309,7 +309,7 @@ async def _analyze(
             normalized_ok = True
             stages.append(StageInfo(
                 stage="probe_normalize",
-                label="원본 메타데이터 + ffmpeg 정규화",
+                label="원본 정보 확인 · 영상 정규화",
                 success=True,
                 elapsed_ms=_now_ms() - t0,
                 data={
@@ -329,7 +329,7 @@ async def _analyze(
         except subprocess.CalledProcessError as e:
             stages.append(StageInfo(
                 stage="probe_normalize",
-                label="원본 메타데이터 + ffmpeg 정규화",
+                label="원본 정보 확인 · 영상 정규화",
                 success=False,
                 elapsed_ms=_now_ms() - t0,
                 error=f"FFMPEG_ERROR: {e.stderr.decode('utf-8', errors='ignore')[:500] if e.stderr else str(e)}",
@@ -337,7 +337,7 @@ async def _analyze(
         except Exception as e:
             stages.append(StageInfo(
                 stage="probe_normalize",
-                label="원본 메타데이터 + ffmpeg 정규화",
+                label="원본 정보 확인 · 영상 정규화",
                 success=False,
                 elapsed_ms=_now_ms() - t0,
                 error=f"{type(e).__name__}: {e}",
@@ -351,7 +351,7 @@ async def _analyze(
             scenes = await _run_sync(detect_scenes, analysis_target)
             stages.append(StageInfo(
                 stage="scene_split",
-                label="장면 분리 (PySceneDetect)",
+                label="장면 분리",
                 success=True,
                 elapsed_ms=_now_ms() - t0,
                 data={
@@ -363,7 +363,7 @@ async def _analyze(
         except Exception as e:
             stages.append(StageInfo(
                 stage="scene_split",
-                label="장면 분리 (PySceneDetect)",
+                label="장면 분리",
                 success=False,
                 elapsed_ms=_now_ms() - t0,
                 error=f"{type(e).__name__}: {e}",
@@ -383,7 +383,7 @@ async def _analyze(
                 )
                 stages.append(StageInfo(
                     stage="keyframes",
-                    label="대표 프레임 추출 (OpenCV)",
+                    label="대표 프레임 추출",
                     success=True,
                     elapsed_ms=_now_ms() - t0,
                     data={
@@ -394,7 +394,7 @@ async def _analyze(
             except Exception as e:
                 stages.append(StageInfo(
                     stage="keyframes",
-                    label="대표 프레임 추출 (OpenCV)",
+                    label="대표 프레임 추출",
                     success=False,
                     elapsed_ms=_now_ms() - t0,
                     error=f"{type(e).__name__}: {e}",
@@ -402,7 +402,7 @@ async def _analyze(
         else:
             stages.append(StageInfo(
                 stage="keyframes",
-                label="대표 프레임 추출 (OpenCV)",
+                label="대표 프레임 추출",
                 success=False,
                 elapsed_ms=_now_ms() - t0,
                 error="NO_SCENES",
@@ -427,7 +427,7 @@ async def _analyze(
                 }
             stages.append(StageInfo(
                 stage="face_identify",
-                label="인재 얼굴 식별 (InsightFace)",
+                label="인재 얼굴 식별",
                 success=bool(identify_result.get("enabled")),
                 elapsed_ms=_now_ms() - t0,
                 data={
@@ -452,7 +452,7 @@ async def _analyze(
             logger.exception("face_identify 실패")
             stages.append(StageInfo(
                 stage="face_identify",
-                label="인재 얼굴 식별 (InsightFace)",
+                label="인재 얼굴 식별",
                 success=False,
                 elapsed_ms=_now_ms() - t0,
                 error=f"{type(e).__name__}: {e}",
@@ -466,7 +466,7 @@ async def _analyze(
         except subprocess.CalledProcessError as e:
             stages.append(StageInfo(
                 stage="audio_stt",
-                label="오디오 추출 + Whisper STT",
+                label="음성 추출 · 대사 인식",
                 success=False,
                 elapsed_ms=_now_ms() - t0,
                 error=f"AUDIO_EXTRACT_FAILED: {e.stderr.decode('utf-8', errors='ignore')[:300] if e.stderr else str(e)}",
@@ -478,7 +478,7 @@ async def _analyze(
                 )
                 stages.append(StageInfo(
                     stage="audio_stt",
-                    label="오디오 추출 + Whisper STT",
+                    label="음성 추출 · 대사 인식",
                     success="error" not in stt,
                     elapsed_ms=_now_ms() - t0,
                     data={
@@ -490,7 +490,7 @@ async def _analyze(
             except Exception as e:
                 stages.append(StageInfo(
                     stage="audio_stt",
-                    label="오디오 추출 + Whisper STT",
+                    label="음성 추출 · 대사 인식",
                     success=False,
                     elapsed_ms=_now_ms() - t0,
                     data={"audio": audio_meta},
@@ -517,7 +517,7 @@ async def _analyze(
                 audio_features_by_scene = {f["scene_id"]: f for f in feats}
                 stages.append(StageInfo(
                     stage="audio_features",
-                    label="음성 특징 (librosa)",
+                    label="음성 특징 분석",
                     success=True,
                     elapsed_ms=_now_ms() - t0,
                     data={"per_scene": feats},
@@ -525,7 +525,7 @@ async def _analyze(
             except Exception as e:
                 stages.append(StageInfo(
                     stage="audio_features",
-                    label="음성 특징 (librosa)",
+                    label="음성 특징 분석",
                     success=False,
                     elapsed_ms=_now_ms() - t0,
                     error=f"{type(e).__name__}: {e}",
@@ -533,7 +533,7 @@ async def _analyze(
         else:
             stages.append(StageInfo(
                 stage="audio_features",
-                label="음성 특징 (librosa)",
+                label="음성 특징 분석",
                 success=False,
                 elapsed_ms=_now_ms() - t0,
                 error="NO_SCENES_OR_AUDIO",
@@ -551,7 +551,7 @@ async def _analyze(
         if not (normalized_ok and normalized_path.exists()):
             stages.append(StageInfo(
                 stage="rag_json",
-                label="RAG 분석 + Qdrant 적재 + 영구 저장",
+                label="장면 분석 · 검색 색인 · 저장",
                 success=False,
                 elapsed_ms=0,
                 error="SKIPPED_NORMALIZE_FAILED",
@@ -559,7 +559,7 @@ async def _analyze(
         elif not (scenes and keyframes_data):
             stages.append(StageInfo(
                 stage="rag_json",
-                label="RAG 분석 + Qdrant 적재 + 영구 저장",
+                label="장면 분석 · 검색 색인 · 저장",
                 success=False,
                 elapsed_ms=0,
                 error="SKIPPED_NO_SCENES_OR_KEYFRAMES",
@@ -704,7 +704,7 @@ async def _analyze(
 
                 stages.append(StageInfo(
                     stage="rag_json",
-                    label="RAG 분석 + Qdrant 적재 + 영구 저장",
+                    label="장면 분석 · 검색 색인 · 저장",
                     success=len(errors) == 0,
                     elapsed_ms=_now_ms() - t0,
                     data={
@@ -731,7 +731,7 @@ async def _analyze(
                 logger.exception(f"persist+rag+index failed (rolled back): {e}")
                 stages.append(StageInfo(
                     stage="rag_json",
-                    label="RAG 분석 + Qdrant 적재 + 영구 저장",
+                    label="장면 분석 · 검색 색인 · 저장",
                     success=False,
                     elapsed_ms=_now_ms() - t0,
                     data={

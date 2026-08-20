@@ -29,7 +29,7 @@ export default function AdminDashboard() {
       />
       <div className="absolute inset-0 bg-black/50 -z-10" />
 
-      <DashboardHeader variant="dark" />
+      <DashboardHeader variant="dark" menu="public" />
 
       <main className="relative max-w-6xl mx-auto px-4 sm:px-6 pt-28 pb-12">
         <h1 className="text-2xl sm:text-3xl font-bold text-white drop-shadow-lg">

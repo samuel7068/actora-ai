@@ -45,7 +45,11 @@ export default function PortfolioPanel({
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [loadingMedia, setLoadingMedia] = useState(true);
   const [analyzeOpen, setAnalyzeOpen] = useState(false);
-  const [player, setPlayer] = useState<{ src: string; title: string | null } | null>(
+  const [player, setPlayer] = useState<{
+    src: string;
+    title: string | null;
+    summary: string | null;
+  } | null>(
     null,
   );
 
@@ -173,6 +177,7 @@ export default function PortfolioPanel({
                   setPlayer({
                     src: m.stream_url,
                     title: m.title || m.original_file_name || null,
+                    summary: m.ai_summary ?? null,
                   })
                 }
                 className="block w-full text-left"
@@ -226,6 +231,7 @@ export default function PortfolioPanel({
         onClose={() => setPlayer(null)}
         src={player?.src ?? null}
         title={player?.title ?? null}
+        summary={player?.summary ?? null}
       />
     </div>
   );

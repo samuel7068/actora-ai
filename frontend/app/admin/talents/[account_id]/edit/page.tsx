@@ -191,7 +191,7 @@ export default function AdminTalentEditPage() {
       />
       <div className="absolute inset-0 bg-black/55 -z-10" />
 
-      <DashboardHeader variant="dark" />
+      <DashboardHeader variant="dark" menu="public" />
 
       <main className="relative max-w-3xl mx-auto px-4 sm:px-6 pt-28 pb-12">
         <h1 className="text-2xl sm:text-3xl font-bold text-white drop-shadow-lg">

@@ -162,7 +162,7 @@ export default function AdminTalentsPage() {
       />
       <div className="absolute inset-0 bg-black/55 -z-10" />
 
-      <DashboardHeader variant="dark" />
+      <DashboardHeader variant="dark" menu="public" />
 
       <main className="relative max-w-[100rem] mx-auto px-4 sm:px-6 pt-28 pb-12">
         <div className="flex items-center justify-between mb-6">

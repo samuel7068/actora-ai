@@ -26,7 +26,15 @@ type Profile = {
   height_cm: number | null;
   weight_kg: number | null;
 };
-type SearchResult = { score: number; payload: ScenePayload; profile?: Profile | null };
+type SearchResult = {
+  score: number;
+  payload: ScenePayload;
+  profile?: Profile | null;
+  /** 영상 전체를 종합한 대표 요약 (talent_media.ai_summary) */
+  media_summary?: string | null;
+  /** 질의 감정과 겹친 감정 — 이 결과가 위로 올라온 이유 */
+  emotion_match?: string[];
+};
 type Conditions = {
   age_min: number | null;
   age_max: number | null;
@@ -97,6 +105,17 @@ const HEIGHT_OPTIONS: RangeOption[] = [
   { value: "180-", label: "180cm 이상", min: 180, max: null },
 ];
 
+// 입력 요소 공통 스타일.
+//   · 크기를 지정하지 않으면 select/input 은 브라우저 기본값(16px)이 적용돼
+//     헤더·본문보다 커 보인다 → text-sm 으로 고정
+//   · 헤더의 유리 알약과 같은 언어(반투명 배경 + ring)로 맞춘다
+const FIELD_CLS =
+  "rounded-xl bg-white/[0.06] ring-1 ring-white/15 backdrop-blur-md " +
+  "px-3.5 py-2 text-sm text-white/90 transition-colors " +
+  "hover:bg-white/[0.1] hover:ring-white/25 " +
+  "focus:outline-none focus:ring-2 focus:ring-sky-400/60 " +
+  "[&>option]:bg-zinc-900 [&>option]:text-white";
+
 const findRange = (opts: RangeOption[], value: string) =>
   opts.find((o) => o.value === value) ?? null;
 
@@ -109,11 +128,6 @@ function scoreTier(score: number): { label: string; color: string } {
 }
 
 // 요약을 앞에서 n단어까지만 잘라 "…" 붙임
-function truncateWords(text: string, n = 25): string {
-  const words = text.trim().split(/\s+/);
-  return words.length <= n ? text : words.slice(0, n).join(" ") + " …";
-}
-
 // 추출된 DB 조건을 사람이 읽는 칩 문자열로
 function conditionChips(c: Conditions): string[] {
   const chips: string[] = [];
@@ -151,8 +165,14 @@ export default function TalentSearchView() {
   const [conditions, setConditions] = useState<Conditions | null>(null);
   // 유사도가 낮아 서버에서 제외된 인재 수 (결과가 적은 이유를 알려주기 위함)
   const [droppedLowScore, setDroppedLowScore] = useState(0);
+  // 서버가 질의에서 인식한 감정 — 결과 정렬 근거를 알려준다
+  const [queryEmotions, setQueryEmotions] = useState<string[]>([]);
   const [err, setErr] = useState<string | null>(null);
-  const [player, setPlayer] = useState<{ src: string; title: string | null } | null>(
+  const [player, setPlayer] = useState<{
+    src: string;
+    title: string | null;
+    summary: string | null;
+  } | null>(
     null,
   );
   const [detailId, setDetailId] = useState<number | null>(null);
@@ -193,7 +213,7 @@ export default function TalentSearchView() {
       return;
     }
     if (acc.account_type !== "AGENCY" && acc.account_type !== "ADMIN") {
-      setErr("인재 탐색은 에이전시·관리자 전용 기능입니다.");
+      setErr("AI 아티스트 검색은 에이전시·관리자 전용 기능입니다.");
       return;
     }
     // 주 분야·성별은 필수 선택
@@ -206,6 +226,7 @@ export default function TalentSearchView() {
     setResults(null);
     setConditions(null);
     setDroppedLowScore(0);
+    setQueryEmotions([]);
     const age = findRange(AGE_OPTIONS, ageRange);
     const height = findRange(HEIGHT_OPTIONS, heightRange);
     try {
@@ -214,6 +235,7 @@ export default function TalentSearchView() {
         results: SearchResult[];
         conditions: Conditions;
         dropped_low_score?: number;
+        query_emotions?: string[];
       }>("/agency/search", {
         params: {
           q: term,
@@ -231,6 +253,7 @@ export default function TalentSearchView() {
       setResults(res.data.results);
       setConditions(res.data.conditions);
       setDroppedLowScore(res.data.dropped_low_score ?? 0);
+      setQueryEmotions(res.data.query_emotions ?? []);
       setApplied({
         category: mainCategory,
         gender,
@@ -254,7 +277,7 @@ export default function TalentSearchView() {
           "AI 검색 서버가 일시적으로 응답하지 않습니다. 잠시 후 다시 시도해 주세요.",
         );
       } else if (res?.status === 403) {
-        setErr("인재 탐색은 에이전시·관리자 전용 기능입니다.");
+        setErr("AI 아티스트 검색은 에이전시·관리자 전용 기능입니다.");
       } else {
         setErr("검색에 실패했습니다. 잠시 후 다시 시도해 주세요.");
       }
@@ -277,23 +300,26 @@ export default function TalentSearchView() {
       />
       <div className="absolute inset-0 bg-black/55 -z-10" />
 
-      <DashboardHeader variant="dark" onLoginClick={() => setLoginOpen(true)} />
+      <DashboardHeader
+        variant="dark"
+        menu="public"
+        onLoginClick={() => setLoginOpen(true)}
+      />
 
-      <main className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-28 pb-12">
+      <main className="relative max-w-[100rem] mx-auto px-3 sm:px-5 pt-28 pb-12">
         <h1 className="text-2xl sm:text-3xl font-bold text-white drop-shadow-lg flex items-center gap-2">
           <Sparkles className="w-7 h-7 text-amber-100" />
-          인재 탐색
+          AI 아티스트
         </h1>
         <p className="mt-1 text-white/80 drop-shadow">
           <b className="text-amber-100">인재 프로필</b>로 후보를 좁히고,{" "}
           <b className="text-amber-100">영상 장면</b>에서 연기·연출된 모습을 문장으로 검색합니다.
         </p>
-        <p className="mt-1 text-white/60 text-sm drop-shadow">
-          실제 나이와 연기한 나이대는 따로 고를 수 있습니다. 특기·언어는 검색 문장에서 자동 인식합니다.
-        </p>
 
+        {/* 조건 두 묶음을 좌우로 — 세로로 쌓으면 검색까지 눈이 두 번 내려간다 */}
+        <div className="mt-8 grid grid-cols-1 xl:grid-cols-5 gap-4">
         {/* ── 구역 1: 인재 프로필 — 등록된 실제 정보로 후보를 좁힌다 ── */}
-        <section className="mt-8 rounded-xl border border-white/15 bg-white/5 backdrop-blur-md p-4">
+        <section className="xl:col-span-2 rounded-xl border border-white/15 bg-white/5 backdrop-blur-md p-4">
           <div className="flex flex-wrap items-center gap-2 mb-3">
             <span className="w-5 h-5 shrink-0 rounded-full bg-amber-100 text-zinc-900 text-[11px] font-bold flex items-center justify-center">
               1
@@ -307,7 +333,7 @@ export default function TalentSearchView() {
             <select
               value={mainCategory}
               onChange={(e) => setMainCategory(e.target.value)}
-              className="rounded-lg border border-white/20 bg-white/10 backdrop-blur-md px-3 py-2.5 text-white focus:outline-none focus:border-white/40 [&>option]:text-zinc-900"
+              className={FIELD_CLS}
             >
               <option value="">주 분야 *</option>
               {CATEGORY_OPTIONS.map((o) => (
@@ -319,7 +345,7 @@ export default function TalentSearchView() {
             <select
               value={gender}
               onChange={(e) => setGender(e.target.value)}
-              className="rounded-lg border border-white/20 bg-white/10 backdrop-blur-md px-3 py-2.5 text-white focus:outline-none focus:border-white/40 [&>option]:text-zinc-900"
+              className={FIELD_CLS}
             >
               <option value="">성별 *</option>
               {GENDER_OPTIONS.map((o) => (
@@ -331,7 +357,7 @@ export default function TalentSearchView() {
             <select
               value={ageRange}
               onChange={(e) => setAgeRange(e.target.value)}
-              className="rounded-lg border border-white/20 bg-white/10 backdrop-blur-md px-3 py-2.5 text-white focus:outline-none focus:border-white/40 [&>option]:text-zinc-900"
+              className={FIELD_CLS}
             >
               <option value="">실제 나이 (전체)</option>
               {AGE_OPTIONS.map((o) => (
@@ -343,7 +369,7 @@ export default function TalentSearchView() {
             <select
               value={heightRange}
               onChange={(e) => setHeightRange(e.target.value)}
-              className="rounded-lg border border-white/20 bg-white/10 backdrop-blur-md px-3 py-2.5 text-white focus:outline-none focus:border-white/40 [&>option]:text-zinc-900"
+              className={FIELD_CLS}
             >
               <option value="">키 (전체)</option>
               {HEIGHT_OPTIONS.map((o) => (
@@ -356,7 +382,7 @@ export default function TalentSearchView() {
         </section>
 
         {/* ── 구역 2: 영상 장면 — 업로드된 영상에서 연기·연출된 모습 (RAG) ── */}
-        <section className="mt-4 rounded-xl border border-white/15 bg-white/5 backdrop-blur-md p-4">
+        <section className="xl:col-span-3 rounded-xl border border-white/15 bg-white/5 backdrop-blur-md p-4">
           <div className="flex flex-wrap items-center gap-2 mb-3">
             <span className="w-5 h-5 shrink-0 rounded-full bg-amber-100 text-zinc-900 text-[11px] font-bold flex items-center justify-center">
               2
@@ -366,11 +392,12 @@ export default function TalentSearchView() {
               영상에서 연기·연출된 모습 — 실제 나이와 달라도 됩니다
             </span>
           </div>
-          <div className="flex flex-wrap gap-2">
+          {/* 조건 select 과 검색어를 한 줄에 — 좁은 화면에서는 자연스럽게 줄바꿈된다 */}
+          <div className="flex flex-wrap items-center gap-2">
             <select
               value={roleAgeRange}
               onChange={(e) => setRoleAgeRange(e.target.value)}
-              className="rounded-lg border border-white/20 bg-white/10 backdrop-blur-md px-3 py-2.5 text-white focus:outline-none focus:border-white/40 [&>option]:text-zinc-900"
+              className={FIELD_CLS}
             >
               <option value="">연기한 나이대 (전체)</option>
               {ROLE_AGE_OPTIONS.map((o) => (
@@ -379,22 +406,19 @@ export default function TalentSearchView() {
                 </option>
               ))}
             </select>
-          </div>
-
-          <div className="mt-2 flex gap-2">
             <input
               type="text"
               value={q}
               onChange={(e) => setQ(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && runSearch(q)}
               placeholder="예: 울음을 참으며 눌러 담는 감정 연기"
-              className="flex-1 rounded-lg border border-white/20 bg-white/10 backdrop-blur-md px-4 py-2.5 text-white placeholder-white/40 focus:outline-none focus:border-white/40"
+              className={`flex-1 min-w-[18rem] ${FIELD_CLS} placeholder-white/35`}
             />
             <button
               type="button"
               onClick={() => runSearch(q)}
               disabled={loading || !q.trim() || !mainCategory || !gender}
-              className="inline-flex items-center gap-2 rounded-lg bg-amber-100 text-zinc-900 px-5 py-2.5 text-sm font-semibold hover:bg-amber-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold text-white bg-gradient-to-r from-sky-500 to-violet-500 ring-1 ring-white/20 shadow-[0_6px_20px_-8px_rgba(129,140,248,0.8)] hover:from-sky-400 hover:to-violet-400 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
             >
               {loading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -419,6 +443,7 @@ export default function TalentSearchView() {
             ))}
           </div>
         </section>
+        </div>
 
         {err && (
           <div className="mt-4 rounded-lg bg-red-500/20 border border-red-400/40 text-red-100 text-sm px-4 py-2.5">
@@ -435,6 +460,11 @@ export default function TalentSearchView() {
                 {droppedLowScore > 0 && (
                   <span className="ml-1 text-white/40">
                     (유사도 낮은 {droppedLowScore}명 제외)
+                  </span>
+                )}
+                {queryEmotions.length > 0 && (
+                  <span className="ml-1 text-white/40">
+                    · 감정 {queryEmotions.join("·")} 순으로 정렬
                   </span>
                 )}
               </span>
@@ -497,47 +527,66 @@ export default function TalentSearchView() {
                       key={`${p.talent_media_id}-${p.scene_id}-${i}`}
                       className="rounded-xl border border-white/15 bg-white/5 backdrop-blur-md p-4"
                     >
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
+                      <div className="flex items-start justify-between gap-3">
+                        {/* 이름 + 스펙을 한 줄에 — 우측 점수를 2행으로 접어 폭을 확보했다 */}
+                        <div className="min-w-0 flex items-baseline gap-2">
                           {prof ? (
                             <button
                               type="button"
                               onClick={() => setDetailId(prof.account_id)}
-                              className="text-white font-semibold hover:text-amber-100 hover:underline transition-colors"
+                              className="shrink-0 text-white font-semibold hover:text-amber-100 hover:underline transition-colors"
                             >
                               {prof.name}
                             </button>
                           ) : (
-                            <span className="text-white font-semibold">
+                            <span className="shrink-0 text-white font-semibold">
                               이름 미상
                             </span>
                           )}
                           {specs.length > 0 && (
-                            <span className="ml-2 text-white/60 text-xs">
+                            <span className="truncate text-white/55 text-xs">
                               {specs.join(" · ")}
                             </span>
                           )}
                         </div>
-                        <span
+                        {/* 등급과 수치를 위아래로 — 한 줄이면 좌측 정보가 밀려 내려간다 */}
+                        <div
                           className={
-                            "text-xs font-semibold shrink-0 " + scoreTier(r.score).color
+                            "shrink-0 text-right leading-tight " + scoreTier(r.score).color
                           }
                         >
-                          {scoreTier(r.score).label} · 유사도 {(r.score * 100).toFixed(1)}%
-                        </span>
-                      </div>
-                      {p.scene_summary && (
-                        <div className="relative group/sum mt-2">
-                          <p className="text-sm leading-relaxed text-white/85 cursor-help">
-                            {truncateWords(p.scene_summary, 25)}
-                          </p>
-                          {/* hover 시 전체 요약 표시 */}
-                          <div className="pointer-events-none absolute left-0 top-full z-20 mt-1 w-full opacity-0 group-hover/sum:opacity-100 transition-opacity">
-                            <div className="rounded-lg border border-white/15 bg-zinc-900/95 backdrop-blur-md shadow-2xl p-3 text-xs leading-relaxed text-white/90">
-                              {p.scene_summary}
-                            </div>
+                          <div className="text-[11px] font-semibold">
+                            {scoreTier(r.score).label}
                           </div>
+                          <div className="text-sm font-bold tabular-nums">
+                            {(r.score * 100).toFixed(1)}%
+                          </div>
+                          {/* 이 결과가 위로 올라온 이유 */}
+                          {r.emotion_match && r.emotion_match.length > 0 && (
+                            <div className="mt-1 text-[10px] font-medium text-emerald-300">
+                              {r.emotion_match.join("·")} 일치
+                            </div>
+                          )}
                         </div>
+                      </div>
+                      {/* 카드 본문 = 영상 전체 요약. 자르지 않고 전부 보여주되,
+                          500자가 넘어 카드 높이가 제각각이 되지 않도록 상한 안에서 스크롤한다.
+                          (대표 요약이 없는 구버전 분석 영상은 장면 요약으로 대체) */}
+                      {(r.media_summary || p.scene_summary) && (
+                        <p className="mt-2 max-h-44 overflow-y-auto pr-1 text-sm leading-relaxed text-white/85 select-text">
+                          {r.media_summary || p.scene_summary}
+                        </p>
+                      )}
+                      {/* 검색어와 맞은 장면은 따로 접어 둔다 — 왜 이 결과가 나왔는지 근거 */}
+                      {r.media_summary && p.scene_summary && (
+                        <details className="mt-2 group/scene">
+                          <summary className="cursor-pointer list-none text-[11px] font-medium text-amber-100/70 hover:text-amber-100 transition-colors">
+                            검색어와 맞은 장면 보기
+                          </summary>
+                          <p className="mt-1.5 max-h-32 overflow-y-auto pr-1 text-xs leading-relaxed text-white/65 select-text">
+                            {p.scene_summary}
+                          </p>
+                        </details>
                       )}
                       {keywords.length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-1.5">
@@ -557,7 +606,11 @@ export default function TalentSearchView() {
                           onClick={() =>
                             setPlayer({
                               src: `/api/media/${p.talent_media_id}`,
-                              title: p.scene_summary ?? null,
+                              // 제목은 누구의 어느 장면인지, 분석 내용은 summary 로
+                              title: prof?.name
+                                ? `${prof.name}${p.scene_id ? ` · ${p.scene_id}` : ""}`
+                                : null,
+                              summary: p.scene_summary ?? null,
                             })
                           }
                           className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs px-3 py-1.5 transition-colors"
@@ -580,6 +633,7 @@ export default function TalentSearchView() {
         onClose={() => setPlayer(null)}
         src={player?.src ?? null}
         title={player?.title ?? null}
+        summary={player?.summary ?? null}
       />
 
       <TalentDetailModal accountId={detailId} onClose={() => setDetailId(null)} />

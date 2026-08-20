@@ -1,6 +1,7 @@
 """에이전시 전용 API."""
 import asyncio
 import logging
+from typing import Any
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -14,7 +15,7 @@ from src.agency.query_parse import parse_search_query
 from src.auth.deps import get_current_account
 from src.config import get_settings
 from src.database import get_db
-from src.talent.models import TalentMaster
+from src.talent.models import TalentMaster, TalentMedia
 
 logger = logging.getLogger(__name__)
 
@@ -107,6 +108,35 @@ def _has_any_condition(cond: dict) -> bool:
 MIN_SCORE = 0.35
 
 
+# scene 의 primary_emotion / emotion_keywords 에 쓰이는 감정 값.
+# 프롬프트(portfolio_video_analysis_*.toml, search_query_parse.toml)와 동일해야 한다.
+_EMOTIONS = (
+    "분노", "슬픔", "기쁨", "불안", "두려움", "놀람", "혐오",
+    "그리움", "절박함", "억울함", "설렘", "당황", "체념", "평온", "긴장",
+)
+
+# 감정이 겹칠 때 순위에 얹는 가중치.
+#   임베딩은 "감정의 종류"보다 "표현 방식"에 강하게 반응한다.
+#   ("울음을 참으며 눌러 담는" 질의에 분노 장면의 arc "억눌림→격앙" 이 더 잘 맞는 식)
+#   그래서 감정 종류가 맞는 장면을 위로 끌어올린다.
+#   **표시되는 유사도(score)는 건드리지 않고 정렬 키만 보정한다** — 화면의 수치를
+#   조작하면 사용자가 결과를 신뢰할 수 없다.
+_EMOTION_PRIMARY_BONUS = 0.08
+_EMOTION_KEYWORD_BONUS = 0.03
+
+
+def _scene_emotions(payload: dict[str, Any]) -> set[str]:
+    """scene payload 에서 감정 집합 (primary + keywords)."""
+    out: set[str] = set()
+    primary = payload.get("primary_emotion")
+    if isinstance(primary, str) and primary.strip():
+        out.add(primary.strip())
+    kws = payload.get("emotion_keywords")
+    if isinstance(kws, list):
+        out |= {str(k).strip() for k in kws if str(k).strip()}
+    return out
+
+
 # scene 의 role.age_range 값 — 프롬프트(portfolio_video_analysis_*.toml)와 동일해야 한다
 _ROLE_AGE_RANGES = (
     "child_actor", "elementary", "middle_school", "high_school",
@@ -125,6 +155,11 @@ async def search_talents(
     age_max: int | None = Query(None, ge=0, le=120, description="연령대 상한 (선택)"),
     height_min: int | None = Query(None, ge=100, le=250, description="키 하한 cm (선택)"),
     height_max: int | None = Query(None, ge=100, le=250, description="키 상한 cm (선택)"),
+    emotion: str | None = Query(
+        None,
+        description="감정 (선택). 고르면 그 감정이 없는 장면은 결과에서 제외한다. "
+        + "/".join(_EMOTIONS),
+    ),
     role_age_range: str | None = Query(
         None,
         description="영상에서 **연기한 역할**의 연령대 (선택). "
@@ -154,6 +189,8 @@ async def search_talents(
         raise HTTPException(status_code=400, detail="INVALID_GENDER")
     if role_age_range and role_age_range not in _ROLE_AGE_RANGES:
         raise HTTPException(status_code=400, detail="INVALID_ROLE_AGE_RANGE")
+    if emotion and emotion not in _EMOTIONS:
+        raise HTTPException(status_code=400, detail="INVALID_EMOTION")
 
     config = get_settings()
 
@@ -178,7 +215,7 @@ async def search_talents(
         "height_min": height_min,
         "height_max": height_max,
     }
-    scene_filter = {"role_age_range": role_age_range}
+    scene_filter = {"role_age_range": role_age_range, "emotion": emotion}
     for key, value in explicit.items():
         if value is not None:
             cond[key] = value
@@ -267,6 +304,13 @@ async def search_talents(
         aid = _to_int((r.get("payload") or {}).get("account_id"))
         if aid is None or aid in seen:
             continue
+
+        # 감정을 직접 고른 경우, 그 감정이 없는 장면은 건너뛴다.
+        # seen 에 넣지 않는 이유: 같은 인재의 **다른 장면** 이 그 감정을 담고 있을 수
+        # 있으므로 기회를 남겨 둔다 (최고점 장면이 감정 불일치일 수 있다).
+        if emotion and emotion not in _scene_emotions(r.get("payload") or {}):
+            continue
+
         seen.add(aid)
         # raw 는 내림차순이라 이 scene 이 그 인재의 최고점.
         # 최고점이 임계값 미달이면 캐스팅 후보로 쓸 수 없어 제외한다.
@@ -277,6 +321,29 @@ async def search_talents(
         if len(deduped) >= limit:
             break
     raw = deduped
+
+    # ── 감정 일치 재순위 ──
+    # 임베딩은 감정의 *종류* 보다 *표현 방식* 에 강하게 반응한다.
+    # ("울음을 참으며 눌러 담는" 질의에 분노 장면의 arc "억눌림→격앙" 이 더 잘 맞는 식)
+    # 그래서 감정 종류가 맞는 장면을 위로 올린다.
+    # 화면에 보이는 유사도(score)는 그대로 두고 **정렬 순서만** 바꾼다.
+    target_emotions = set(cond.get("emotions") or [])
+    if emotion:
+        target_emotions.add(emotion)
+
+    for r in raw:
+        payload = r.get("payload") or {}
+        matched = sorted(_scene_emotions(payload) & target_emotions)
+        r["emotion_match"] = matched
+        bonus = 0.0
+        if target_emotions:
+            if payload.get("primary_emotion") in target_emotions:
+                bonus += _EMOTION_PRIMARY_BONUS
+            bonus += _EMOTION_KEYWORD_BONUS * len(matched)
+        r["rank_score"] = round(float(r.get("score") or 0.0) + bonus, 6)
+
+    if target_emotions:
+        raw.sort(key=lambda x: x.get("rank_score", 0.0), reverse=True)
 
     # ── 프로필 병합 (조건 없던 경우 여기서 조회) ──
     missing = {
@@ -306,9 +373,29 @@ async def search_talents(
             prof = _profile_dict(*row)
             profiles[prof["account_id"]] = prof
 
+    # ── 영상 전체 요약(talent_media.ai_summary) 병합 ──
+    # scene payload 에는 그 장면 요약만 있다. 카드에서 "이 인재가 어떤 사람인지" 를
+    # 보여주려면 영상 단위 대표 요약이 필요하다.
+    media_ids = {
+        _to_int((r.get("payload") or {}).get("talent_media_id")) for r in raw
+    }
+    media_ids.discard(None)
+    media_summaries: dict[int, str | None] = {}
+    if media_ids:
+        media_rows = (
+            await db.execute(
+                select(TalentMedia.talent_media_id, TalentMedia.ai_summary).where(
+                    TalentMedia.talent_media_id.in_(media_ids)
+                )
+            )
+        ).all()
+        media_summaries = {mid: summary for mid, summary in media_rows}
+
     for r in raw:
         aid = _to_int((r.get("payload") or {}).get("account_id"))
         r["profile"] = profiles.get(aid)
+        mid = _to_int((r.get("payload") or {}).get("talent_media_id"))
+        r["media_summary"] = media_summaries.get(mid)
 
     return {
         "query": q,
@@ -317,6 +404,7 @@ async def search_talents(
         "gender": gender,
         "explicit": explicit,
         "scene_filter": scene_filter,
+        "query_emotions": sorted(target_emotions),
         "min_score": MIN_SCORE,
         # 유사도가 낮아 제외된 인재 수 — 프론트에서 "왜 결과가 적은지" 안내에 쓴다
         "dropped_low_score": dropped_low_score,

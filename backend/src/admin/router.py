@@ -117,13 +117,7 @@ async def list_all_media(
         }
         for m, nm in rows
     ]
-    return {
-        "items": items,
-        "total": total,
-        "page": page,
-        "size": size,
-        "total_pages": max(1, (total + size - 1) // size),
-    }
+    return {"items": items, "total": len(items)}
 
 
 @admin_router.get("/media/{media_id}/scenes")
@@ -365,13 +359,7 @@ async def list_talent_media(
         }
         for r in rows
     ]
-    return {
-        "items": items,
-        "total": total,
-        "page": page,
-        "size": size,
-        "total_pages": max(1, (total + size - 1) // size),
-    }
+    return {"items": items, "total": len(items)}
 
 
 @admin_router.delete("/talents/{account_id}/media/{media_id}")

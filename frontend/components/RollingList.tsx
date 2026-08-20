@@ -12,6 +12,8 @@ type Props = {
   /** 행마다 stagger 지연(ms) */
   staggerMs?: number;
   className?: string;
+  /** 각 행(li)에 적용할 클래스 — 불릿·색상 등 항목 단위 스타일용 */
+  itemClassName?: string;
 };
 
 /**
@@ -26,6 +28,7 @@ export default function RollingList({
   intervalMs = 3000,
   staggerMs = 80,
   className = "",
+  itemClassName = "truncate drop-shadow",
 }: Props) {
   const [start, setStart] = useState(0);
 
@@ -57,7 +60,7 @@ export default function RollingList({
               ease: "easeOut" as const,
               delay: idx * (staggerMs / 1000),
             }}
-            className="truncate drop-shadow"
+            className={itemClassName}
           >
             {item}
           </motion.li>

@@ -1,0 +1,1497 @@
+[
+  {
+    "scene_id": "scene_001",
+    "scene_start_sec": 0.0,
+    "scene_end_sec": 0.934,
+    "role": {
+      "character_name": "",
+      "character_type": "일반인형",
+      "occupation": "",
+      "age_range": "30s",
+      "gender_appearance": "female"
+    },
+    "era": {
+      "period": "현대",
+      "setting": "실내 주방/거실",
+      "confidence": 0.92
+    },
+    "scene_description": "짧은 곱슬 단발머리의 30대 여성으로 보이는 인물이 실내 주방/거실 공간에서 카메라 밖을 향해 시선을 두고 있다. 검은 상의 차림에 차분한 표정과 낮은 에너지의 정적인 분위기가 느껴지며, 말이 없는 짧은 구간이라 정보 전달보다 상황을 지켜보는 인상이다.",
+    "acting_analysis": {
+      "acting_style": [
+        "자연스러운",
+        "절제된",
+        "정적인"
+      ],
+      "emotion_delivery": "대사가 없는 짧은 구간이지만, 표정과 시선의 방향에서 감정을 과하게 드러내지 않는 절제된 톤이 읽힌다. 에너지가 낮고 멈춘 듯한 자세가 담담함과 약한 긴장을 함께 전달한다.",
+      "immersion_level": "보통",
+      "camera_presence": "화면 안에서 시선이 비교적 또렷하게 잡히며, 과장 없이도 존재감이 유지된다.",
+      "strength_keywords": [
+        "절제",
+        "담담함",
+        "자연스러운 리액션",
+        "정적인 분위기",
+        "시선 처리"
+      ],
+      "weakness_keywords": [
+        "표정 변화 적음",
+        "감정 표출 약함",
+        "대사 정보 부족"
+      ]
+    },
+    "emotion_analysis": {
+      "primary_emotion": "평온",
+      "emotion_keywords": [
+        "평온",
+        "긴장",
+        "차분함",
+        "담담함"
+      ],
+      "intensity": "낮음",
+      "emotion_arc": "일정",
+      "expression_channels": [
+        "표정",
+        "시선",
+        "몸짓"
+      ],
+      "emotion_detail": "미간이나 입꼬리의 큰 변화 없이 얼굴 전체가 비교적 안정적으로 유지되어 평온한 인상이 강하다. 시선은 정면보다 약간 옆으로 향해 있고, 표정이 굳거나 무너지지 않아 감정을 밖으로 크게 드러내지 않는다. 몸의 움직임도 크지 않아 에너지가 낮고 정적인 상태로 읽히며, 짧은 호흡의 멈춤이 약한 긴장감을 보탠다. 과장된 반응 없이 눌러 담는 방식이라 장면의 감정이 자연스럽게 전달된다."
+    },
+    "speech_analysis": {
+      "speech_style": [
+        "무음",
+        "비발화"
+      ],
+      "tone_keywords": [
+        "차분한",
+        "조용한",
+        "절제된"
+      ],
+      "speech_speed": "매우 느림",
+      "voice_characteristics": [
+        "음성 없음",
+        "낮은 에너지",
+        "긴 정지"
+      ]
+    },
+    "physical_expression": {
+      "facial_expression_keywords": [
+        "담담한 표정",
+        "입술 힘 뺀 상태",
+        "미세한 긴장",
+        "시선 고정"
+      ],
+      "gesture_keywords": [
+        "움직임 적음",
+        "정지된 자세",
+        "가벼운 몸의 긴장"
+      ],
+      "eye_contact_style": "카메라를 직접 응시하기보다 옆을 보는 시선",
+      "body_language_keywords": [
+        "정적인 자세",
+        "긴장감 있는 멈춤",
+        "차분한 태도"
+      ]
+    },
+    "appearance": {
+      "hair_length": "숏컷",
+      "hair": "짧은 곱슬 흑발",
+      "image_type": "친근형",
+      "eye_size": "보통",
+      "eyelid": "유쌍",
+      "eye_shape": "아몬드형",
+      "eye_tail": "보통",
+      "body_type": "보통형",
+      "body_style": "일반인형",
+      "skin_tone": "중간 톤",
+      "impression_keywords": [
+        "차분한",
+        "친근한",
+        "담백한",
+        "정적인",
+        "생활감"
+      ]
+    },
+    "resembling_celebrities": {
+      "candidates": [],
+      "confidence": 0.0,
+      "note": ""
+    },
+    "mood_keywords": [
+      "차분함",
+      "평온",
+      "긴장",
+      "담담함",
+      "정적",
+      "생활감"
+    ],
+    "search_keywords": [
+      "30대 여성",
+      "짧은 곱슬 단발",
+      "친근한 이미지",
+      "차분한",
+      "담담한",
+      "실내 주방",
+      "거실",
+      "자연스러운",
+      "절제된",
+      "정적인",
+      "평온",
+      "긴장감",
+      "일반인형"
+    ],
+    "scene_summary": "짧은 곱슬 단발머리의 30대 여성으로 보이는 인물이 실내 주방/거실에서 정적인 자세로 서 있으며, 검은 상의와 중간 톤 피부가 생활감 있는 분위기를 만든다. 대사가 없는 짧은 구간이라 음성은 없지만, 옆을 향한 시선과 큰 표정 변화 없는 얼굴에서 차분함과 약한 긴장감이 함께 읽힌다.",
+    "account_id": "11",
+    "talent_media_id": "25",
+    "target_identified": true,
+    "target_similarity": 0.5766,
+    "target_confident": false,
+    "scene_face_count": 2
+  },
+  {
+    "scene_id": "scene_002",
+    "scene_start_sec": 0.934,
+    "scene_end_sec": 11.678,
+    "role": {
+      "character_name": "",
+      "character_type": "일반인/출연자",
+      "occupation": "발화자",
+      "age_range": "20s",
+      "gender_appearance": "male"
+    },
+    "era": {
+      "period": "현대",
+      "setting": "실내 거실",
+      "confidence": 0.86
+    },
+    "scene_description": "짧은 곱슬머리의 20대 남성이 커튼이 드리운 실내 공간에서 카메라를 정면으로 바라보며 말을 이어간다. 검은 상의 차림에 무표정에 가까운 얼굴로 담담하게 발화하지만, 말끝의 흐림과 약한 눈꺼풀 처짐에서 약간의 피로감과 생각에 잠긴 분위기가 읽힌다.",
+    "acting_analysis": {
+      "acting_style": [
+        "자연스러운",
+        "절제된",
+        "브이로그형",
+        "정면 토크형"
+      ],
+      "emotion_delivery": "과장 없이 담담하게 감정을 눌러 말하는 방식이다. 표정 변화는 크지 않지만 시선과 말끝의 흐림, 낮은 에너지로 내면의 무게를 전달한다.",
+      "immersion_level": "보통",
+      "camera_presence": "정면 응시가 안정적이고 화면 중앙 집중도가 높아 카메라 앞 존재감은 무난하다.",
+      "strength_keywords": [
+        "담담함",
+        "자연스러운 발화",
+        "절제된 감정",
+        "정면 응시",
+        "안정적인 화면 집중"
+      ],
+      "weakness_keywords": [
+        "표정 변화 적음",
+        "감정 폭발감 부족",
+        "에너지 낮음",
+        "강한 제스처 부족"
+      ]
+    },
+    "emotion_analysis": {
+      "primary_emotion": "평온",
+      "emotion_keywords": [
+        "평온",
+        "무기력",
+        "생각에 잠김",
+        "약한 불안",
+        "담담함"
+      ],
+      "intensity": "낮음",
+      "emotion_arc": "일정",
+      "expression_channels": [
+        "목소리",
+        "표정",
+        "시선"
+      ],
+      "emotion_detail": "미간이나 입꼬리의 큰 변화 없이 얼굴 전체가 비교적 평평하게 유지되어 감정을 세게 드러내지 않는다. 목소리는 에너지가 낮고 말속도가 빠르지 않으며, 문장 사이의 짧은 멈춤이 생각을 정리하며 말하는 느낌을 만든다. 시선은 카메라를 향하지만 강하게 파고들기보다 힘이 빠진 상태로 머무르며, 전체적으로 눌러 담은 평온과 약한 피로감이 함께 읽힌다. 과장된 연기보다는 일상적인 토크에 가까운 절제된 전달이다."
+    },
+    "speech_analysis": {
+      "speech_style": [
+        "담담한 설명체",
+        "일상 토크형",
+        "절제된 발화"
+      ],
+      "tone_keywords": [
+        "낮은 톤",
+        "차분함",
+        "무심함",
+        "약한 피로감",
+        "건조함"
+      ],
+      "speech_speed": "보통보다 약간 느림",
+      "voice_characteristics": [
+        "중저음",
+        "에너지 낮음",
+        "피치 변동 큼",
+        "말끝 흐림",
+        "호흡이 짧게 끊김"
+      ]
+    },
+    "physical_expression": {
+      "facial_expression_keywords": [
+        "무표정",
+        "눈꺼풀 처짐",
+        "입술 힘 빠짐",
+        "미간 이완"
+      ],
+      "gesture_keywords": [
+        "큰 제스처 없음",
+        "정면 응시",
+        "상체 고정"
+      ],
+      "eye_contact_style": "카메라 정면 응시, 시선 흔들림은 적지만 힘이 강하지 않음",
+      "body_language_keywords": [
+        "자세가 비교적 고정됨",
+        "움직임 적음",
+        "차분한 태도"
+      ]
+    },
+    "appearance": {
+      "hair_length": "숏컷",
+      "hair": "짧은 곱슬 흑발",
+      "image_type": "중성형",
+      "eye_size": "보통",
+      "eyelid": "무쌍",
+      "eye_shape": "가는형",
+      "eye_tail": "보통",
+      "body_type": "보통형",
+      "body_style": "일반인형",
+      "skin_tone": "중간 톤",
+      "impression_keywords": [
+        "담담한",
+        "중성적인",
+        "일상적",
+        "무심한",
+        "차분한"
+      ]
+    },
+    "resembling_celebrities": {
+      "candidates": [],
+      "confidence": 0.0,
+      "note": ""
+    },
+    "mood_keywords": [
+      "평온",
+      "차분",
+      "무기력",
+      "생각에 잠김",
+      "건조함",
+      "담담함",
+      "약한 피로감"
+    ],
+    "search_keywords": [
+      "20대 남성",
+      "짧은 곱슬머리",
+      "무쌍 눈매",
+      "중성적인 이미지",
+      "실내 거실",
+      "정면 토크",
+      "차분한 말투",
+      "담담한 연기",
+      "평온한 분위기",
+      "무기력한 톤",
+      "일상 브이로그",
+      "자연스러운 발화",
+      "낮은 에너지"
+    ],
+    "scene_summary": "짧은 곱슬머리와 검은 상의를 한 20대 남성이 커튼이 있는 실내 거실에서 카메라를 정면으로 보며 담담하게 말한다. 무표정에 가까운 얼굴과 낮은 에너지의 목소리, 말끝이 흐려지는 발화가 어우러져 평온하면서도 약간 피로한 분위기를 만든다.",
+    "account_id": "11",
+    "talent_media_id": "25",
+    "target_identified": true,
+    "target_similarity": 0.8593,
+    "target_confident": true,
+    "scene_face_count": 1
+  },
+  {
+    "scene_id": "scene_003",
+    "scene_start_sec": 11.678,
+    "scene_end_sec": 15.449,
+    "role": {
+      "character_name": "",
+      "character_type": "인터뷰 출연자",
+      "occupation": "자기소개/인터뷰 응답자",
+      "age_range": "30s",
+      "gender_appearance": "male"
+    },
+    "era": {
+      "period": "현대",
+      "setting": "실내 인터뷰 공간",
+      "confidence": 0.92
+    },
+    "scene_description": "짧은 곱슬머리와 검은 상의를 한 30대 남성이 실내 인터뷰 공간에서 카메라를 향해 말을 잇고 있다. 담담한 표정 속에서도 입이 벌어지고 시선이 고정되어 있어, 설명을 이어가며 자신의 경험을 전달하는 차분한 톤이 읽힌다.",
+    "acting_analysis": {
+      "acting_style": [
+        "자연스러운",
+        "절제된",
+        "인터뷰형",
+        "담담한"
+      ],
+      "emotion_delivery": "감정을 크게 드러내기보다 담담하게 사실을 전달하는 방식이다. 말의 흐름과 표정이 과장되지 않아 인터뷰 상황에 맞는 현실감은 있으나, 감정의 폭은 크지 않다.",
+      "immersion_level": "보통",
+      "camera_presence": "정면 응시와 안정된 발화로 화면 집중도는 무난하다. 강한 표정 변화는 적지만 말하는 인물로서 시선은 비교적 잘 유지된다.",
+      "strength_keywords": [
+        "담담함",
+        "자연스러움",
+        "안정감",
+        "절제",
+        "인터뷰 적합",
+        "정면 응시"
+      ],
+      "weakness_keywords": [
+        "표정 변화 적음",
+        "감정 폭 제한",
+        "강한 드라마성 부족"
+      ]
+    },
+    "emotion_analysis": {
+      "primary_emotion": "평온",
+      "emotion_keywords": [
+        "평온",
+        "담담함",
+        "긴장",
+        "집중",
+        "약한 불안"
+      ],
+      "intensity": "낮음",
+      "emotion_arc": "일정",
+      "expression_channels": [
+        "표정",
+        "목소리",
+        "시선"
+      ],
+      "emotion_detail": "미간이나 입꼬리의 큰 변화 없이 비교적 평평한 표정을 유지하며 말을 이어간다. 목소리는 에너지가 과하게 높지 않고, pitch 변동은 있으나 전반적으로 설명형 톤에 가깝다. 호흡과 멈춤이 길지 않아 감정을 눌러 담기보다는 차분히 전달하는 인상이다. 감정이 폭발하지는 않지만 인터뷰 상황에 맞는 절제된 평온함이 자연스럽게 읽힌다."
+    },
+    "speech_analysis": {
+      "speech_style": [
+        "설명형",
+        "인터뷰형",
+        "차분한 발화"
+      ],
+      "tone_keywords": [
+        "차분한",
+        "담담한",
+        "신뢰감 있는",
+        "중립적인"
+      ],
+      "speech_speed": "보통",
+      "voice_characteristics": [
+        "중저음",
+        "약간의 떨림",
+        "pitch 변동 있음",
+        "에너지 낮지 않음",
+        "끊김 적음"
+      ]
+    },
+    "physical_expression": {
+      "facial_expression_keywords": [
+        "담담한 표정",
+        "입을 벌려 발화",
+        "미세한 긴장",
+        "무표정에 가까움"
+      ],
+      "gesture_keywords": [
+        "큰 제스처 없음",
+        "정면 응시",
+        "상체 고정"
+      ],
+      "eye_contact_style": "카메라 정면 응시",
+      "body_language_keywords": [
+        "자세 안정적",
+        "움직임 적음",
+        "차분한 태도"
+      ]
+    },
+    "appearance": {
+      "hair_length": "숏컷",
+      "hair": "짧은 곱슬 흑발",
+      "image_type": "중성형",
+      "eye_size": "보통",
+      "eyelid": "무쌍",
+      "eye_shape": "가는형",
+      "eye_tail": "보통",
+      "body_type": "보통형",
+      "body_style": "일반인형",
+      "skin_tone": "중간 톤",
+      "impression_keywords": [
+        "담백함",
+        "중립적",
+        "차분함",
+        "소탈함",
+        "현실감"
+      ]
+    },
+    "resembling_celebrities": {
+      "candidates": [],
+      "confidence": 0.0,
+      "note": ""
+    },
+    "mood_keywords": [
+      "차분",
+      "담담",
+      "평온",
+      "중립",
+      "약한 긴장",
+      "현실적",
+      "인터뷰 분위기"
+    ],
+    "search_keywords": [
+      "30대 남성",
+      "짧은 곱슬머리",
+      "무쌍 눈매",
+      "차분한",
+      "담담한",
+      "인터뷰 출연자",
+      "실내 인터뷰",
+      "자연스러운 연기",
+      "절제된 표현",
+      "평온한 분위기",
+      "중립적인 톤",
+      "설명형 발화",
+      "신뢰감"
+    ],
+    "scene_summary": "짧은 곱슬머리와 검은 상의를 한 30대 남성이 실내 인터뷰 공간에서 카메라를 바라보며 담담하게 말을 잇는다. 무쌍에 가까운 가는 눈매와 큰 제스처 없는 자세가 차분한 분위기를 만들고, 낮은 강도의 평온한 감정이 설명형 톤으로 드러난다.",
+    "account_id": "11",
+    "talent_media_id": "25",
+    "target_identified": true,
+    "target_similarity": 0.8001,
+    "target_confident": true,
+    "scene_face_count": 2
+  },
+  {
+    "scene_id": "scene_004",
+    "scene_start_sec": 15.449,
+    "scene_end_sec": 17.985,
+    "role": {
+      "character_name": "",
+      "character_type": "진행자",
+      "occupation": "방송 진행",
+      "age_range": "30s",
+      "gender_appearance": "female"
+    },
+    "era": {
+      "period": "현대",
+      "setting": "방송 스튜디오",
+      "confidence": 0.98
+    },
+    "scene_description": "짧은 단발머리의 30대 여성 진행자가 방송 스튜디오에서 옆모습으로 서서 멘트를 이어간다. 낮은 에너지와 거의 흔들림 없는 일정한 피치로 차분하게 말하며, 정보 전달 중심의 담담한 분위기가 느껴진다.",
+    "acting_analysis": {
+      "acting_style": [
+        "자연스러운",
+        "절제된",
+        "정보전달형",
+        "방송 진행 톤"
+      ],
+      "emotion_delivery": "감정 표현을 크게 드러내기보다 안정된 호흡과 일정한 톤으로 내용을 전달하는 방식이다. 짧은 발화 안에서도 과장 없이 정돈된 인상이 유지되어 방송 진행자로서의 신뢰감이 읽힌다.",
+      "immersion_level": "보통",
+      "camera_presence": "안정적이고 단정한 화면 장악력은 있으나 강한 감정 연기로 시선을 끄는 타입은 아니다.",
+      "strength_keywords": [
+        "차분함",
+        "정돈된 발화",
+        "신뢰감",
+        "절제",
+        "자연스러운 진행"
+      ],
+      "weakness_keywords": [
+        "감정 변화 적음",
+        "표현 폭 제한적",
+        "강한 드라마틱함 부족"
+      ]
+    },
+    "emotion_analysis": {
+      "primary_emotion": "평온",
+      "emotion_keywords": [
+        "평온",
+        "차분함",
+        "중립",
+        "안정감",
+        "담담함"
+      ],
+      "intensity": "낮음",
+      "emotion_arc": "일정",
+      "expression_channels": [
+        "목소리",
+        "표정",
+        "시선"
+      ],
+      "emotion_detail": "미세한 표정 변화가 거의 없고, 옆모습에서도 입매와 턱선이 크게 흔들리지 않아 감정을 눌러 둔 상태로 보인다. 평균 피치가 매우 낮고 표준편차도 거의 없어 말투가 안정적이며, 에너지도 낮아 흥분이나 동요가 드러나지 않는다. 호흡의 끊김이나 긴 pause가 없어서 문장을 매끈하게 이어가는 정보 전달형 톤이 강하다. 감정이 전면에 나오기보다 평온하고 정돈된 상태가 유지되는 장면이다."
+    },
+    "speech_analysis": {
+      "speech_style": [
+        "방송체",
+        "또박또박한",
+        "차분한",
+        "정보 전달형"
+      ],
+      "tone_keywords": [
+        "낮은 톤",
+        "안정적",
+        "담담한",
+        "신뢰감",
+        "절제된"
+      ],
+      "speech_speed": "보통",
+      "voice_characteristics": [
+        "낮은 평균 음높이",
+        "변동폭이 거의 없는 일정한 피치",
+        "에너지가 낮은 편",
+        "끊김 없는 발화"
+      ]
+    },
+    "physical_expression": {
+      "facial_expression_keywords": [
+        "중립 표정",
+        "담담한 입매",
+        "긴장감 적음"
+      ],
+      "gesture_keywords": [
+        "특별한 손짓 없음",
+        "정적인 자세"
+      ],
+      "eye_contact_style": "측면 응시",
+      "body_language_keywords": [
+        "옆모습",
+        "정돈된 자세",
+        "움직임 적음"
+      ]
+    },
+    "appearance": {
+      "hair_length": "",
+      "hair": "",
+      "image_type": "",
+      "eye_size": "",
+      "eyelid": "",
+      "eye_shape": "",
+      "eye_tail": "",
+      "body_type": "",
+      "body_style": "",
+      "skin_tone": "",
+      "impression_keywords": []
+    },
+    "resembling_celebrities": {
+      "candidates": [],
+      "confidence": 0.0,
+      "note": ""
+    },
+    "mood_keywords": [
+      "차분",
+      "평온",
+      "안정감",
+      "담담함",
+      "신뢰감",
+      "정보전달",
+      "방송 분위기"
+    ],
+    "search_keywords": [
+      "30대 여성",
+      "진행자",
+      "방송 스튜디오",
+      "차분한",
+      "신뢰감",
+      "평온",
+      "정보 전달형",
+      "낮은 톤",
+      "절제된 연기",
+      "중립 표정",
+      "옆모습",
+      "현대",
+      "방송"
+    ],
+    "scene_summary": "방송 스튜디오에서 30대 여성 진행자가 옆모습으로 서서 짧은 멘트를 차분하게 이어간다. 낮은 평균 음높이와 거의 흔들림 없는 톤, 정적인 자세가 어우러져 평온하고 신뢰감 있는 정보 전달 장면으로 읽힌다.",
+    "account_id": "11",
+    "talent_media_id": "25",
+    "target_identified": false,
+    "target_similarity": null,
+    "target_confident": false,
+    "scene_face_count": 1
+  },
+  {
+    "scene_id": "scene_005",
+    "scene_start_sec": 17.985,
+    "scene_end_sec": 34.835,
+    "role": {
+      "character_name": "",
+      "character_type": "방송 출연자",
+      "occupation": "발언자",
+      "age_range": "30s",
+      "gender_appearance": "female"
+    },
+    "era": {
+      "period": "현대",
+      "setting": "실내 방송/인터뷰 공간",
+      "confidence": 0.92
+    },
+    "scene_description": "짧은 곱슬머리의 30대 여성 출연자가 실내 방송 공간에서 카메라를 향해 말을 이어간다. 검은 상의 차림에 비교적 담담한 표정이지만, 말끝의 흔들림과 약간 올라간 피치가 긴장과 당황을 드러낸다.",
+    "acting_analysis": {
+      "acting_style": [
+        "자연스러운",
+        "절제된",
+        "정보 전달형"
+      ],
+      "emotion_delivery": "감정을 크게 터뜨리기보다 말의 흐름 속에 긴장과 당황을 섞어 전달한다. 표정 변화는 크지 않지만 음성의 높낮이와 호흡이 흔들리며 장면의 불안감을 설득력 있게 만든다.",
+      "immersion_level": "보통",
+      "camera_presence": "정면 응시가 안정적이고 화면 중앙에서 발화가 이어져 시선 집중도는 괜찮다. 다만 강한 감정 폭발보다는 설명·발언 중심이라 장악력은 절제된 편이다.",
+      "strength_keywords": [
+        "정면 응시",
+        "절제된 감정",
+        "자연스러운 발화",
+        "긴장감",
+        "정보 전달력"
+      ],
+      "weakness_keywords": [
+        "표정 변화 적음",
+        "감정 폭발 약함",
+        "강한 서사성 부족"
+      ]
+    },
+    "emotion_analysis": {
+      "primary_emotion": "당황",
+      "emotion_keywords": [
+        "당황",
+        "긴장",
+        "불안",
+        "억울함",
+        "절박함"
+      ],
+      "intensity": "보통",
+      "emotion_arc": "담담함 → 당황과 긴장",
+      "expression_channels": [
+        "목소리",
+        "표정",
+        "시선"
+      ],
+      "emotion_detail": "입은 비교적 열려 있지만 미간과 눈가의 긴장감이 남아 있어 말하는 내내 당황이 깔려 있다. 피치 평균이 높고 변동폭도 있어 문장을 이어가며 순간적으로 흔들리는 느낌이 난다. 호흡은 크게 끊기지 않지만 말의 리듬이 매끈하지 않아 불안과 급한 마음이 함께 읽힌다. 과장된 오열이나 격한 분노는 아니고, 눌러 말하는 방식으로 긴장감을 유지한다."
+    },
+    "speech_analysis": {
+      "speech_style": [
+        "발언형",
+        "설명형",
+        "즉흥적 말하기"
+      ],
+      "tone_keywords": [
+        "차분한",
+        "약간 긴장된",
+        "불안한",
+        "담담한"
+      ],
+      "speech_speed": "보통",
+      "voice_characteristics": [
+        "중간보다 높은 음역",
+        "피치 변동 큼",
+        "에너지 낮은 편",
+        "말끝이 다소 흐려짐"
+      ]
+    },
+    "physical_expression": {
+      "facial_expression_keywords": [
+        "미간 긴장",
+        "입술 벌림",
+        "눈가 흔들림",
+        "담담한 표정"
+      ],
+      "gesture_keywords": [
+        "특별한 큰 제스처 없음",
+        "정면 응시",
+        "상체 고정"
+      ],
+      "eye_contact_style": "카메라를 정면으로 응시하되 순간적으로 흔들리는 시선",
+      "body_language_keywords": [
+        "자세가 비교적 고정됨",
+        "움직임 적음",
+        "긴장감이 몸에 남아 있음"
+      ]
+    },
+    "appearance": {
+      "hair_length": "숏컷",
+      "hair": "짧은 곱슬 흑발",
+      "image_type": "중성형",
+      "eye_size": "보통",
+      "eyelid": "유쌍",
+      "eye_shape": "아몬드형",
+      "eye_tail": "보통",
+      "body_type": "보통형",
+      "body_style": "일반인형",
+      "skin_tone": "중간 톤",
+      "impression_keywords": [
+        "중성적",
+        "지적",
+        "담담한",
+        "긴장감 있는",
+        "현대적"
+      ]
+    },
+    "resembling_celebrities": {
+      "candidates": [],
+      "confidence": 0.0,
+      "note": ""
+    },
+    "mood_keywords": [
+      "긴장",
+      "당황",
+      "불안",
+      "담담함",
+      "절제",
+      "진지함"
+    ],
+    "search_keywords": [
+      "30대 여성",
+      "숏컷",
+      "곱슬머리",
+      "중성적 이미지",
+      "실내 방송",
+      "인터뷰",
+      "차분한 발언",
+      "긴장된 말투",
+      "당황 연기",
+      "불안한 분위기",
+      "정면 응시",
+      "자연스러운 연기",
+      "정보 전달형"
+    ],
+    "scene_summary": "짧은 곱슬머리의 30대 여성 출연자가 실내 방송/인터뷰 공간에서 카메라를 정면으로 보며 말을 이어간다. 검은 상의 차림의 중성적인 이미지에 담담한 표정이지만, 피치 변동과 낮은 에너지 속 흔들리는 말끝이 당황과 긴장을 드러낸다.",
+    "account_id": "11",
+    "talent_media_id": "25",
+    "target_identified": true,
+    "target_similarity": 0.8088,
+    "target_confident": true,
+    "scene_face_count": 1
+  },
+  {
+    "scene_id": "scene_006",
+    "scene_start_sec": 34.835,
+    "scene_end_sec": 37.905,
+    "role": {
+      "character_name": "",
+      "character_type": "일상 인물",
+      "occupation": "",
+      "age_range": "20s",
+      "gender_appearance": "female"
+    },
+    "era": {
+      "period": "현대",
+      "setting": "주방",
+      "confidence": 0.92
+    },
+    "scene_description": "현대적인 주방으로 보이는 실내에서 20대 여성으로 보이는 인물이 옆모습으로 서 있다. 긴 머리를 늘어뜨린 채 조리대 쪽을 향해 몸을 두고 있어 일상적인 집안 상황이나 요리 준비 장면으로 읽힌다.",
+    "acting_analysis": {
+      "acting_style": [],
+      "emotion_delivery": "음성이 없는 구간이라 감정 표현은 직접 확인되지 않으며, 화면상으로는 일상 동작 중심의 자연스러운 상황 연출로 보인다. 과장된 연기보다는 생활 장면에 가까운 톤이다.",
+      "immersion_level": "낮음",
+      "camera_presence": "보통",
+      "strength_keywords": [
+        "일상적",
+        "자연스러운 상황 연출",
+        "생활감"
+      ],
+      "weakness_keywords": [
+        "얼굴 미확인",
+        "감정 표현 확인 어려움",
+        "대사 없음"
+      ]
+    },
+    "emotion_analysis": {
+      "primary_emotion": "평온",
+      "emotion_keywords": [
+        "평온",
+        "중립",
+        "일상적",
+        "차분함"
+      ],
+      "intensity": "낮음",
+      "emotion_arc": "일정",
+      "expression_channels": [
+        "몸짓"
+      ],
+      "emotion_detail": "대사가 없고 음성 에너지도 낮은 편이라 감정이 강하게 드러나지 않는다. 옆모습과 정적인 자세에서 긴장이나 격한 동요보다는 평온한 일상 상태가 읽힌다. 표정은 확인되지 않지만 몸의 움직임이 크지 않아 감정이 눌려 있거나 중립적인 장면으로 보인다. 과장된 감정 표출 없이 담담하게 상황을 이어가는 분위기다."
+    },
+    "speech_analysis": {
+      "speech_style": [
+        "무음"
+      ],
+      "tone_keywords": [
+        "조용한",
+        "차분한",
+        "중립적"
+      ],
+      "speech_speed": "없음",
+      "voice_characteristics": [
+        "음성 없음",
+        "낮은 에너지",
+        "피치 변동 확인 어려움"
+      ]
+    },
+    "physical_expression": {
+      "facial_expression_keywords": [],
+      "gesture_keywords": [
+        "팔을 뻗은 자세",
+        "조리 동작",
+        "정적인 몸짓"
+      ],
+      "eye_contact_style": "확인 불가",
+      "body_language_keywords": [
+        "옆모습",
+        "실내에서 조리대 방향 응시",
+        "일상적인 자세"
+      ]
+    },
+    "appearance": {
+      "hair_length": "",
+      "hair": "",
+      "image_type": "",
+      "eye_size": "",
+      "eyelid": "",
+      "eye_shape": "",
+      "eye_tail": "",
+      "body_type": "",
+      "body_style": "",
+      "skin_tone": "",
+      "impression_keywords": []
+    },
+    "resembling_celebrities": {
+      "candidates": [],
+      "confidence": 0.0,
+      "note": ""
+    },
+    "mood_keywords": [
+      "평온",
+      "차분",
+      "일상적",
+      "조용함",
+      "중립"
+    ],
+    "search_keywords": [
+      "20대 여성",
+      "주방",
+      "실내",
+      "일상 장면",
+      "차분한 분위기",
+      "평온한",
+      "무음",
+      "자연스러운",
+      "생활감",
+      "조리 동작",
+      "옆모습",
+      "중립적"
+    ],
+    "scene_summary": "현대적인 주방 실내에서 20대 여성으로 보이는 인물이 옆모습으로 조리대 쪽에 서 있는 일상 장면이다. 대사와 음성이 없는 구간이라 감정은 강하게 드러나지 않으며, 낮은 에너지와 정적인 자세가 평온하고 차분한 분위기를 만든다.",
+    "account_id": "11",
+    "talent_media_id": "25",
+    "target_identified": false,
+    "target_similarity": null,
+    "target_confident": false,
+    "scene_face_count": 1
+  },
+  {
+    "scene_id": "scene_007",
+    "scene_start_sec": 37.905,
+    "scene_end_sec": 50.517,
+    "role": {
+      "character_name": "",
+      "character_type": "일반인/인터뷰형",
+      "occupation": "인터뷰 응답자",
+      "age_range": "30s",
+      "gender_appearance": "female"
+    },
+    "era": {
+      "period": "현대",
+      "setting": "실내 거실",
+      "confidence": 0.86
+    },
+    "scene_description": "짧은 곱슬머리의 30대 여성으로 보이는 인물이 밝은 커튼이 있는 실내에서 카메라를 정면으로 바라보며 인터뷰하듯 말한다. 검은 상의의 단정한 차림과 담담한 표정 속에, 대사 내용에 맞춰 억눌린 충격과 슬픔이 목소리의 흔들림으로 스며든다.",
+    "acting_analysis": {
+      "acting_style": [
+        "자연스러운",
+        "절제된",
+        "인터뷰형",
+        "정극"
+      ],
+      "emotion_delivery": "감정을 크게 터뜨리기보다 말의 흐름 속에 충격과 슬픔을 눌러 담는 방식이다. 대사 내용이 무거운데도 표정과 호흡의 미세한 흔들림으로 감정의 무게를 전달해 설득력이 있다.",
+      "immersion_level": "보통",
+      "camera_presence": "정면 응시가 안정적이고 화면 집중도가 높다. 과장된 제스처 없이도 얼굴과 목소리만으로 장면을 끌고 가는 힘이 있다.",
+      "strength_keywords": [
+        "절제된 감정선",
+        "정면 응시",
+        "담담한 전달",
+        "목소리 흔들림",
+        "현실적인 인터뷰 톤"
+      ],
+      "weakness_keywords": [
+        "표정 변화가 크지 않음",
+        "감정 폭발은 약함",
+        "동작이 적음"
+      ]
+    },
+    "emotion_analysis": {
+      "primary_emotion": "슬픔",
+      "emotion_keywords": [
+        "슬픔",
+        "충격",
+        "그리움",
+        "절박함",
+        "불안",
+        "체념"
+      ],
+      "intensity": "보통",
+      "emotion_arc": "담담함 → 충격이 스며듦",
+      "expression_channels": [
+        "목소리",
+        "표정",
+        "호흡",
+        "시선"
+      ],
+      "emotion_detail": "미간과 입술에 힘이 들어가 있지만 울음을 크게 터뜨리지는 않고, 표정 전체를 단단하게 유지한 채 말을 이어간다. 음성은 평균 에너지가 낮고 말속도가 느린 편이라 감정을 눌러 담는 느낌이 강하며, pitch 변동이 커서 중간중간 목소리가 흔들린다. 호흡과 말끝이 완전히 안정되지 않아 대사 내용의 충격과 이입이 자연스럽게 드러난다. 과장된 오열보다는 절제된 슬픔과 당혹감이 섞인 현실적인 반응으로 읽힌다."
+    },
+    "speech_analysis": {
+      "speech_style": [
+        "인터뷰체",
+        "담담한 설명형",
+        "감정 섞인 진술"
+      ],
+      "tone_keywords": [
+        "차분한",
+        "떨리는",
+        "무거운",
+        "진지한",
+        "억눌린"
+      ],
+      "speech_speed": "느림",
+      "voice_characteristics": [
+        "중저음 중심",
+        "pitch 변동 큼",
+        "에너지 낮음",
+        "말끝이 약간 흐려짐",
+        "호흡이 짧게 끊김"
+      ]
+    },
+    "physical_expression": {
+      "facial_expression_keywords": [
+        "미간 긴장",
+        "입술 긴장",
+        "담담한 표정",
+        "눈빛 흔들림",
+        "억눌린 표정"
+      ],
+      "gesture_keywords": [
+        "움직임 적음",
+        "정면 응시",
+        "몸을 크게 쓰지 않음"
+      ],
+      "eye_contact_style": "카메라를 정면으로 응시하며 시선을 비교적 고정함",
+      "body_language_keywords": [
+        "자세가 단정함",
+        "상체 움직임 적음",
+        "긴장감이 몸에 남아 있음"
+      ]
+    },
+    "appearance": {
+      "hair_length": "숏컷",
+      "hair": "짧은 곱슬 흑발",
+      "image_type": "중성형",
+      "eye_size": "보통",
+      "eyelid": "유쌍",
+      "eye_shape": "아몬드형",
+      "eye_tail": "보통",
+      "body_type": "보통형",
+      "body_style": "일반인형",
+      "skin_tone": "중간 톤",
+      "impression_keywords": [
+        "담백한",
+        "중성적인",
+        "차분한",
+        "지적인",
+        "현실적인"
+      ]
+    },
+    "resembling_celebrities": {
+      "candidates": [],
+      "confidence": 0.0,
+      "note": ""
+    },
+    "mood_keywords": [
+      "슬픔",
+      "충격",
+      "불안",
+      "긴장",
+      "차분함",
+      "무거움",
+      "억눌림",
+      "진지함"
+    ],
+    "search_keywords": [
+      "30대 여성",
+      "짧은 곱슬머리",
+      "중성적인 이미지",
+      "차분한",
+      "인터뷰형",
+      "실내",
+      "정면 응시",
+      "절제된 연기",
+      "슬픔",
+      "충격",
+      "억눌린 감정",
+      "담담한 말투",
+      "현실적인",
+      "무거운 분위기"
+    ],
+    "scene_summary": "짧은 곱슬머리의 30대 여성으로 보이는 인물이 밝은 커튼이 있는 실내에서 카메라를 정면으로 바라보며 인터뷰하듯 말한다. 검은 상의의 단정한 차림과 보통 체형의 중성적인 인상 속에서, 낮은 에너지와 큰 pitch 변동이 섞인 목소리로 충격과 슬픔을 절제해 전달한다.",
+    "account_id": "11",
+    "talent_media_id": "25",
+    "target_identified": true,
+    "target_similarity": 0.8286,
+    "target_confident": true,
+    "scene_face_count": 1
+  },
+  {
+    "scene_id": "scene_008",
+    "scene_start_sec": 50.517,
+    "scene_end_sec": 53.02,
+    "role": {
+      "character_name": "",
+      "character_type": "일반인형",
+      "occupation": "",
+      "age_range": "30s",
+      "gender_appearance": "female"
+    },
+    "era": {
+      "period": "현대",
+      "setting": "실내 방송/인터뷰 공간",
+      "confidence": 0.86
+    },
+    "scene_description": "짧은 단발머리의 30대 여성으로 보이는 인물이 실내 방송/인터뷰 공간에서 옆모습으로 서 있다. 시선은 오른쪽 바깥을 향하고 있고, 말이 없는 구간이라 표정은 비교적 차분하지만 입술을 다문 채 생각에 잠긴 듯한 긴장감이 느껴진다.",
+    "acting_analysis": {
+      "acting_style": [
+        "절제된",
+        "자연스러운",
+        "정적인"
+      ],
+      "emotion_delivery": "대사가 없는 짧은 구간이지만, 옆모습과 굳은 입매, 고정된 시선에서 감정을 억누르는 태도가 읽힌다. 과장 없이 멈춰 있는 방식이라 상황의 긴장감이 비교적 설득력 있게 전달된다.",
+      "immersion_level": "보통",
+      "camera_presence": "화면에서 시선을 끄는 편이지만, 강한 표정 변화가 없어 존재감은 절제되어 있다.",
+      "strength_keywords": [
+        "절제",
+        "차분함",
+        "정적인 분위기",
+        "자연스러운 리액션",
+        "긴장감"
+      ],
+      "weakness_keywords": [
+        "표정 변화 적음",
+        "감정 표출 약함",
+        "동작 제한적"
+      ]
+    },
+    "emotion_analysis": {
+      "primary_emotion": "긴장",
+      "emotion_keywords": [
+        "긴장",
+        "불안",
+        "당황",
+        "억눌림"
+      ],
+      "intensity": "낮음",
+      "emotion_arc": "일정",
+      "expression_channels": [
+        "표정",
+        "시선",
+        "몸짓"
+      ],
+      "emotion_detail": "미세하게 굳은 입술과 옆으로 고정된 시선에서 조심스러운 긴장이 느껴진다. 표정 변화가 크지 않아 감정을 밖으로 터뜨리기보다 안으로 누르는 쪽에 가깝다. 음성이 없는 구간이라 목소리의 떨림은 없지만, 정지된 자세와 낮은 에너지 수치가 불안한 정서를 보강한다. 과장된 반응 없이 담담하게 버티는 느낌이라 상황의 압박감이 은근하게 읽힌다."
+    },
+    "speech_analysis": {
+      "speech_style": [
+        "무음"
+      ],
+      "tone_keywords": [
+        "차분함",
+        "조용함",
+        "긴장감"
+      ],
+      "speech_speed": "없음",
+      "voice_characteristics": [
+        "음성 없음",
+        "낮은 에너지",
+        "짧은 정적"
+      ]
+    },
+    "physical_expression": {
+      "facial_expression_keywords": [
+        "입술 다묾",
+        "굳은 표정",
+        "옆모습",
+        "시선 고정"
+      ],
+      "gesture_keywords": [
+        "움직임 적음",
+        "정지된 자세"
+      ],
+      "eye_contact_style": "화면 밖 오른쪽을 응시",
+      "body_language_keywords": [
+        "긴장된 자세",
+        "정적인 몸짓",
+        "감정 억제"
+      ]
+    },
+    "appearance": {
+      "hair_length": "단발",
+      "hair": "짧은 단발 흑갈색",
+      "image_type": "친근형",
+      "eye_size": "보통",
+      "eyelid": "유쌍",
+      "eye_shape": "아몬드형",
+      "eye_tail": "보통",
+      "body_type": "보통형",
+      "body_style": "일반인형",
+      "skin_tone": "중간 톤",
+      "impression_keywords": [
+        "차분한",
+        "친근한",
+        "단정한",
+        "긴장감 있는",
+        "일상적"
+      ]
+    },
+    "resembling_celebrities": {
+      "candidates": [],
+      "confidence": 0.0,
+      "note": ""
+    },
+    "mood_keywords": [
+      "긴장",
+      "불안",
+      "차분",
+      "정적",
+      "억눌림",
+      "조용함"
+    ],
+    "search_keywords": [
+      "30대 여성",
+      "단발머리",
+      "흑갈색 단발",
+      "친근한 이미지",
+      "차분한 분위기",
+      "긴장된 표정",
+      "실내 방송 공간",
+      "인터뷰 장면",
+      "무음",
+      "절제된 연기",
+      "불안",
+      "정적인 리액션"
+    ],
+    "scene_summary": "짧은 단발머리의 30대 여성 인물이 실내 방송/인터뷰 공간에서 옆모습으로 서 있으며, 화면 밖을 응시한 채 입술을 다문 차분한 표정을 짓고 있다. 음성이 없는 짧은 구간이라 감정이 크게 드러나진 않지만, 정지된 자세와 낮은 에너지에서 긴장과 불안이 은근하게 읽히는 절제된 장면이다.",
+    "account_id": "11",
+    "talent_media_id": "25",
+    "target_identified": true,
+    "target_similarity": 0.4929,
+    "target_confident": false,
+    "scene_face_count": 2
+  },
+  {
+    "scene_id": "scene_009",
+    "scene_start_sec": 53.02,
+    "scene_end_sec": 56.59,
+    "role": {
+      "character_name": "",
+      "character_type": "일반인형",
+      "occupation": "",
+      "age_range": "40s",
+      "gender_appearance": "female"
+    },
+    "era": {
+      "period": "현대",
+      "setting": "실내 촬영 공간",
+      "confidence": 0.88
+    },
+    "scene_description": "짧은 곱슬머리의 40대 여성으로 보이는 인물이 실내 촬영 공간에서 카메라를 향해 서 있다. 검은 상의 차림에 눈가가 붉고 입술을 꾹 다문 채 \"제발\"이라고 짧게 말하며, 절박함과 울음을 눌러 담은 듯한 태도를 보인다.",
+    "acting_analysis": {
+      "acting_style": [
+        "절제된",
+        "정극",
+        "내면 연기",
+        "자연스러운"
+      ],
+      "emotion_delivery": "짧은 대사와 낮은 에너지, 큰 동작 없이 버티는 표정이 절박한 감정을 비교적 설득력 있게 전달한다. 과장된 오열보다 눌러 참는 방식이라 감정의 밀도가 살아 있다.",
+      "immersion_level": "높음",
+      "camera_presence": "보통",
+      "strength_keywords": [
+        "절박함",
+        "억눌린 감정",
+        "눈빛 연기",
+        "절제",
+        "내면 집중",
+        "짧은 대사 처리"
+      ],
+      "weakness_keywords": [
+        "동작 변화 적음",
+        "표현 폭 제한",
+        "장면 정보가 짧음"
+      ]
+    },
+    "emotion_analysis": {
+      "primary_emotion": "절박함",
+      "emotion_keywords": [
+        "절박함",
+        "슬픔",
+        "불안",
+        "억울함",
+        "체념"
+      ],
+      "intensity": "보통",
+      "emotion_arc": "참다가 무너짐",
+      "expression_channels": [
+        "표정",
+        "목소리",
+        "시선"
+      ],
+      "emotion_detail": "미간과 눈가가 살짝 긴장된 채 아래로 처지고, 입술은 꾹 다물어 울음을 삼키는 인상이다. 대사는 \"제발\" 한마디뿐이지만, 낮은 에너지와 짧은 호흡이 절박함을 압축해서 드러낸다. 피치 변동이 크게 흔들리면서도 전체적으로는 낮은 톤을 유지해, 감정을 폭발시키기보다 눌러 담는 방식으로 읽힌다. 몸짓은 크지 않지만 시선이 흔들리고 자세가 굳어 있어 내면의 압박감이 느껴진다."
+    },
+    "speech_analysis": {
+      "speech_style": [
+        "짧은 호소형",
+        "절제된 발화",
+        "감정 억제형"
+      ],
+      "tone_keywords": [
+        "낮은 톤",
+        "떨림",
+        "절박한",
+        "눌러 참는",
+        "간절한"
+      ],
+      "speech_speed": "느림",
+      "voice_characteristics": [
+        "낮은 평균 음높이",
+        "큰 피치 변동",
+        "낮은 에너지",
+        "짧은 호흡",
+        "말끝이 약하게 끊김"
+      ]
+    },
+    "physical_expression": {
+      "facial_expression_keywords": [
+        "굳은 입술",
+        "붉어진 눈가",
+        "미간 긴장",
+        "아래로 처진 시선",
+        "울음을 참는 표정"
+      ],
+      "gesture_keywords": [
+        "움직임 적음",
+        "몸을 굳힘",
+        "정지된 자세"
+      ],
+      "eye_contact_style": "직시보다 흔들림이 크고, 정면 응시와 아래 시선이 섞인 불안한 시선",
+      "body_language_keywords": [
+        "긴장된 자세",
+        "위축된 몸짓",
+        "내면을 누르는 태도"
+      ]
+    },
+    "appearance": {
+      "hair_length": "숏컷",
+      "hair": "짧은 곱슬 흑발",
+      "image_type": "강한인상형",
+      "eye_size": "보통",
+      "eyelid": "무쌍",
+      "eye_shape": "가는형",
+      "eye_tail": "보통",
+      "body_type": "보통형",
+      "body_style": "일반인형",
+      "skin_tone": "중간 톤",
+      "impression_keywords": [
+        "강렬",
+        "지친",
+        "절박한",
+        "현실적",
+        "담담한"
+      ]
+    },
+    "resembling_celebrities": {
+      "candidates": [],
+      "confidence": 0.0,
+      "note": ""
+    },
+    "mood_keywords": [
+      "절박함",
+      "슬픔",
+      "불안",
+      "긴장",
+      "쓸쓸함",
+      "진지함"
+    ],
+    "search_keywords": [
+      "40대 여성",
+      "숏컷",
+      "곱슬머리",
+      "강한인상",
+      "실내 촬영 공간",
+      "절박한 연기",
+      "슬픔",
+      "불안",
+      "눌러 담는 감정",
+      "자연스러운",
+      "정극",
+      "호소하는 톤",
+      "눈물 참는 연기"
+    ],
+    "scene_summary": "짧은 곱슬머리의 40대 여성 인물이 실내 촬영 공간에서 검은 상의를 입고 카메라 앞에 서 있다. 눈가를 붉힌 채 입술을 다물고 \"제발\"이라고 짧게 말하며, 낮은 톤과 흔들리는 시선으로 절박함과 슬픔을 눌러 담아낸다.",
+    "account_id": "11",
+    "talent_media_id": "25",
+    "target_identified": true,
+    "target_similarity": 0.73,
+    "target_confident": true,
+    "scene_face_count": 2
+  },
+  {
+    "scene_id": "scene_010",
+    "scene_start_sec": 56.59,
+    "scene_end_sec": 65.599,
+    "role": {
+      "character_name": "",
+      "character_type": "일반인형 엄마 이미지",
+      "occupation": "",
+      "age_range": "40s",
+      "gender_appearance": "female"
+    },
+    "era": {
+      "period": "현대",
+      "setting": "실내 거실",
+      "confidence": 0.86
+    },
+    "scene_description": "짧은 곱슬머리의 40대 여성으로 보이는 인물이 실내에서 카메라를 정면으로 응시하며 말하고 있다. 단정한 상의 차림에 또렷한 눈매와 다소 굳은 입매가 보이며, 낮고 느린 말투로 집으로 돌아가고 싶다는 뜻의 대사를 전한다.",
+    "acting_analysis": {
+      "acting_style": [
+        "자연스러운",
+        "절제된",
+        "생활연기"
+      ],
+      "emotion_delivery": "억눌린 감정이 표정과 낮은 톤에 실려 비교적 설득력 있게 전달된다. 과장된 동작 없이 담담하게 말하지만, 눈빛과 입매의 긴장으로 내면의 답답함이 읽힌다.",
+      "immersion_level": "보통",
+      "camera_presence": "정면 응시가 안정적이라 화면 집중도는 있으나, 감정 폭발보다 일상적 호소에 가까워 강한 장악력보다는 차분한 존재감이 느껴진다.",
+      "strength_keywords": [
+        "절제된 감정",
+        "생활연기",
+        "차분한 호소",
+        "정면 응시",
+        "낮은 톤"
+      ],
+      "weakness_keywords": [
+        "표정 변화가 크지 않음",
+        "감정 폭발은 약함",
+        "동작이 적음"
+      ]
+    },
+    "emotion_analysis": {
+      "primary_emotion": "절박함",
+      "emotion_keywords": [
+        "절박함",
+        "불안",
+        "답답함",
+        "그리움",
+        "체념"
+      ],
+      "intensity": "보통",
+      "emotion_arc": "담담함 → 간절함",
+      "expression_channels": [
+        "표정",
+        "목소리",
+        "시선"
+      ],
+      "emotion_detail": "미간이 크게 찌푸려지지는 않지만 눈가가 약간 붉고, 입술을 다문 채 말하는 모습에서 참고 있는 긴장이 보인다. 목소리는 낮고 느리며, 음높이 변동이 크지 않지만 중간중간 흔들리는 느낌이 있어 속마음을 눌러 말하는 인상이다. 어깨와 얼굴은 크게 움직이지 않고 정면을 유지해 감정을 과장하지 않으며, 오히려 담담한 태도 속 절박함이 드러난다. 대사가 짧고 에너지도 높지 않아 폭발적 오열보다는 눌러 담는 생활형 감정 연기로 읽힌다."
+    },
+    "speech_analysis": {
+      "speech_style": [
+        "담담한",
+        "생활체감형",
+        "낮은 톤"
+      ],
+      "tone_keywords": [
+        "차분한",
+        "답답한",
+        "간절한",
+        "조용한",
+        "무거운"
+      ],
+      "speech_speed": "느림",
+      "voice_characteristics": [
+        "낮은 음역",
+        "에너지 낮음",
+        "피치 변동 중간",
+        "호흡이 길지 않음"
+      ]
+    },
+    "physical_expression": {
+      "facial_expression_keywords": [
+        "굳은 표정",
+        "미세한 긴장",
+        "입술 다문 표정",
+        "눈가의 흔들림"
+      ],
+      "gesture_keywords": [
+        "움직임 적음",
+        "정면 응시",
+        "몸을 크게 쓰지 않음"
+      ],
+      "eye_contact_style": "카메라를 직접 응시하는 정면 시선",
+      "body_language_keywords": [
+        "긴장된 자세",
+        "절제된 몸짓",
+        "정적인 태도"
+      ]
+    },
+    "appearance": {
+      "hair_length": "숏컷",
+      "hair": "짧은 곱슬 흑갈색 머리",
+      "image_type": "친근형",
+      "eye_size": "보통",
+      "eyelid": "유쌍",
+      "eye_shape": "아몬드형",
+      "eye_tail": "보통",
+      "body_type": "보통형",
+      "body_style": "주부형",
+      "skin_tone": "중간 톤",
+      "impression_keywords": [
+        "동안",
+        "친근",
+        "생활감",
+        "차분",
+        "소박함"
+      ]
+    },
+    "resembling_celebrities": {
+      "candidates": [],
+      "confidence": 0.0,
+      "note": ""
+    },
+    "mood_keywords": [
+      "절박함",
+      "불안",
+      "답답함",
+      "차분함",
+      "무거움",
+      "생활감",
+      "담담함"
+    ],
+    "search_keywords": [
+      "40대 여성",
+      "엄마 이미지",
+      "짧은 곱슬머리",
+      "중간 톤 피부",
+      "아몬드형 눈매",
+      "실내 거실",
+      "차분한",
+      "절제된 연기",
+      "생활연기",
+      "절박함",
+      "불안",
+      "답답한 분위기",
+      "낮은 톤",
+      "정면 응시"
+    ],
+    "scene_summary": "짧은 곱슬머리와 중간 톤 피부가 보이는 40대 여성 인물이 실내 거실로 보이는 공간에서 카메라를 정면으로 바라보며 말한다. 낮고 느린 목소리와 굳은 입매, 크게 흔들리지 않는 자세 속에 집으로 돌아가고 싶다는 절박함과 답답함이 눌러 담긴다.",
+    "account_id": "11",
+    "talent_media_id": "25",
+    "target_identified": true,
+    "target_similarity": 0.8509,
+    "target_confident": true,
+    "scene_face_count": 1
+  }
+]
