@@ -122,6 +122,12 @@ class StageList(list):
 
     def append(self, item: StageInfo) -> None:  # type: ignore[override]
         super().append(item)
+        # 서버 로그에도 남긴다 — 진행 중 어디까지 갔는지 로그만으로 추적할 수 있어야 한다
+        line = f"[{item.stage}] {item.label} — {'완료' if item.success else '실패'} ({item.elapsed_ms}ms)"
+        if item.error:
+            logger.warning(f"{line} · {item.error}")
+        else:
+            logger.info(line)
         if self._emit:
             self._emit({
                 "type": "stage",
@@ -300,8 +306,19 @@ async def _analyze(
     scenes: list[dict[str, Any]] = []
     normalized_ok = False
 
+    def begin(stage: str, label: str) -> None:
+        """단계 시작을 알린다.
+
+        stages.append 는 단계가 **끝난 뒤** 호출되므로, 정규화처럼 수십 초 걸리는
+        단계에서는 그동안 화면·로그에 아무 정보가 없다. 시작 시점을 따로 알린다.
+        """
+        logger.info(f"[{stage}] {label} — 시작")
+        if emit:
+            emit({"type": "stage_start", "stage": stage, "label": label})
+
     try:
         # ─────── 단계 1: probe + normalize ───────
+        begin("probe_normalize", "원본 정보 확인 · 영상 정규화")
         t0 = _now_ms()
         try:
             probe_orig = await _run_sync(probe_video, original_path)
@@ -346,6 +363,7 @@ async def _analyze(
         analysis_target = normalized_path if normalized_ok else original_path
 
         # ─────── 단계 2: scene split ───────
+        begin("scene_split", "장면 분리")
         t0 = _now_ms()
         try:
             scenes = await _run_sync(detect_scenes, analysis_target)
@@ -370,6 +388,7 @@ async def _analyze(
             ))
 
         # ─────── 단계 3: keyframe extraction ───────
+        begin("keyframes", "대표 프레임 추출")
         t0 = _now_ms()
         keyframes_data: list[dict[str, Any]] = []
         if scenes:
@@ -409,6 +428,7 @@ async def _analyze(
             ))
 
         # ─────── 단계 3.5: 인재 얼굴 식별 (InsightFace) ───────
+        begin("face_identify", "인재 얼굴 식별")
         # 여러 인물이 등장하는 영상에서 "어느 얼굴이 이 인재인가" 를 특정한다.
         # keyframes_data 를 제자리 수정하므로 이후 단계(6)가 그대로 활용한다.
         t0 = _now_ms()
@@ -459,6 +479,7 @@ async def _analyze(
             ))
 
         # ─────── 단계 4: audio extract + Whisper STT ───────
+        begin("audio_stt", "음성 추출 · 대사 인식")
         t0 = _now_ms()
         config = get_settings()
         try:
@@ -507,6 +528,7 @@ async def _analyze(
                 break
 
         # ─────── 단계 5: 음성 특징 (scene 별) ───────
+        begin("audio_features", "음성 특징 분석")
         t0 = _now_ms()
         audio_features_by_scene: dict[str, dict[str, Any]] = {}
         if scenes and audio_path.exists():
@@ -565,6 +587,7 @@ async def _analyze(
                 error="SKIPPED_NO_SCENES_OR_KEYFRAMES",
             ))
         else:
+            begin("rag_json", "장면 분석 · 검색 색인 · 저장")
             t0 = _now_ms()
             keyframe_by_scene = {kf["scene_id"]: kf for kf in keyframes_data}
             errors: list[str] = []
@@ -623,6 +646,9 @@ async def _analyze(
                             main_category=talent.main_category,
                         )
                         rag_scenes.append(scene_json)
+                        # 장면이 수십 개면 줄마다 남기면 로그가 넘친다 → 10개 단위로
+                        if sc_idx % 10 == 0 or sc_idx == len(scenes):
+                            logger.info(f"[rag_json] 장면 분석 {sc_idx}/{len(scenes)}")
                         if emit:
                             emit({
                                 "type": "scene",
@@ -659,6 +685,10 @@ async def _analyze(
                     talent_media_id=media_id,
                     rag_scenes=rag_scenes,
                     openai_api_key=config.OPENAI_API_KEY,
+                )
+                logger.info(
+                    f"[rag_json] Qdrant 적재 {indexed_count}건 "
+                    f"(분석 {len(rag_scenes)}장면, 오류 {len(errors)}건)"
                 )
                 if indexed_count == 0:
                     raise RuntimeError(

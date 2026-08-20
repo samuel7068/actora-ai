@@ -67,6 +67,8 @@ type ProgressEvent =
       error?: string;
     }
   | { type: "start" }
+  // 단계 시작 — 완료까지 오래 걸리는 구간에서 무엇을 하는지 보여준다
+  | { type: "stage_start"; stage: string; label: string }
   // 프록시가 연결을 끊지 않도록 서버가 주기적으로 보내는 신호 (내용 없음)
   | { type: "ping" }
   | { type: "summary"; summary: string }
@@ -148,6 +150,9 @@ export default function VideoAnalysisModal({ open, onClose, accountId }: Props) 
     switch (ev.type) {
       case "start":
         setCurrent("영상 업로드 완료 — 분석을 시작합니다");
+        break;
+      case "stage_start":
+        setCurrent(`${ev.label} 중…`);
         break;
       case "ping": {
         // 오래 걸리는 단계에서도 살아 있다는 걸 보여준다
