@@ -434,7 +434,10 @@ def analyze_scene_with_gpt(
         )})
         content.append({
             "type": "image_url",
-            "image_url": {"url": crop_uri, "detail": "low"},
+            # 얼굴 crop 만 high — low(85토큰)로 보내면 미간·입꼬리·눈물 같은
+            # 미세한 표정이 뭉개져 감정 분석이 두루뭉술해진다.
+            # 장면 전체 이미지는 배경·상황 파악용이라 low 로 충분하다.
+            "image_url": {"url": crop_uri, "detail": "high"},
         })
     elif target_present is False:
         content.append({"type": "text", "text": (

@@ -9,7 +9,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from pydantic import BaseModel
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -117,7 +117,13 @@ async def list_all_media(
         }
         for m, nm in rows
     ]
-    return {"items": items, "total": len(items)}
+    return {
+        "items": items,
+        "total": total,
+        "page": page,
+        "size": size,
+        "total_pages": max(1, (total + size - 1) // size),
+    }
 
 
 @admin_router.get("/media/{media_id}/scenes")
@@ -135,13 +141,37 @@ async def get_media_rag_scenes(
 
 @admin_router.get("/talents")
 async def list_talents(
+    q: str | None = Query(default=None, description="이름 또는 예명 부분검색"),
+    gender: str | None = Query(default=None, description="성별 필터. MALE / FEMALE"),
+    page: int = Query(default=1, ge=1, description="1부터 시작"),
+    size: int = Query(default=20, ge=1, le=100, description="페이지당 건수"),
     current=Depends(get_current_account),
     db: AsyncSession = Depends(get_db),
 ):
-    """등록된 전체 talent_master 목록 (관리자)."""
+    """등록된 talent_master 목록 (관리자). 이름·성별 검색 + 페이지네이션."""
     account, _admin = current
     if account.account_type != "ADMIN":
         raise HTTPException(status_code=403, detail="ADMIN_ONLY")
+
+    # 검색 조건 — 이름/예명 부분일치, 성별 정확일치
+    conds = []
+    if q and q.strip():
+        like = f"%{q.strip()}%"
+        conds.append(
+            or_(AccountMaster.name.ilike(like), TalentMaster.stage_name.ilike(like))
+        )
+    if gender in ("MALE", "FEMALE"):
+        conds.append(TalentMaster.gender == gender)
+
+    # 전체 건수는 페이지와 무관하게 조건만 적용해 센다
+    total = (
+        await db.execute(
+            select(func.count())
+            .select_from(AccountMaster)
+            .join(TalentMaster, AccountMaster.account_id == TalentMaster.account_id)
+            .where(*conds)
+        )
+    ).scalar_one()
 
     rows = (
         await db.execute(
@@ -163,19 +193,29 @@ async def list_talents(
                 TalentMaster.profile_completion_rate,
             )
             .join(TalentMaster, AccountMaster.account_id == TalentMaster.account_id)
+            .where(*conds)
             .order_by(AccountMaster.account_id.desc())
+            .offset((page - 1) * size)
+            .limit(size)
         )
     ).all()
 
-    # 인재별 영상 개수 (talent_media count) — 별도 집계 후 병합
+    # 인재별 영상 개수 — 현재 페이지에 보이는 인재만 집계
+    page_ids = [r[0] for r in rows]
     count_rows = (
-        await db.execute(
-            select(
-                TalentMedia.account_id,
-                func.count(TalentMedia.talent_media_id),
-            ).group_by(TalentMedia.account_id)
-        )
-    ).all()
+        (
+            await db.execute(
+                select(
+                    TalentMedia.account_id,
+                    func.count(TalentMedia.talent_media_id),
+                )
+                .where(TalentMedia.account_id.in_(page_ids))
+                .group_by(TalentMedia.account_id)
+            )
+        ).all()
+        if page_ids
+        else []
+    )
     media_counts = {acc_id: cnt for acc_id, cnt in count_rows}
 
     items = [
@@ -199,7 +239,13 @@ async def list_talents(
         }
         for r in rows
     ]
-    return {"items": items, "total": len(items)}
+    return {
+        "items": items,
+        "total": total,
+        "page": page,
+        "size": size,
+        "total_pages": max(1, (total + size - 1) // size),
+    }
 
 
 @admin_router.post("/talents", status_code=201)
@@ -319,7 +365,13 @@ async def list_talent_media(
         }
         for r in rows
     ]
-    return {"items": items, "total": len(items)}
+    return {
+        "items": items,
+        "total": total,
+        "page": page,
+        "size": size,
+        "total_pages": max(1, (total + size - 1) // size),
+    }
 
 
 @admin_router.delete("/talents/{account_id}/media/{media_id}")

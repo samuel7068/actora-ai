@@ -101,6 +101,13 @@ def _has_any_condition(cond: dict) -> bool:
     )
 
 
+# scene 의 role.age_range 값 — 프롬프트(portfolio_video_analysis_*.toml)와 동일해야 한다
+_ROLE_AGE_RANGES = (
+    "child_actor", "elementary", "middle_school", "high_school",
+    "20s", "30s", "40s", "50s", "60s", "70s_plus",
+)
+
+
 @agency_router.get("/search")
 async def search_talents(
     q: str = Query(..., min_length=1, description="자연어 검색 문장 (이미지·분위기)"),
@@ -108,15 +115,29 @@ async def search_talents(
         ..., description="주 분야 (필수). ACTOR/MODEL/INFLUENCER/VOCAL/DANCER/MC/CREATOR"
     ),
     gender: str = Query(..., description="성별 (필수). MALE / FEMALE"),
+    age_min: int | None = Query(None, ge=0, le=120, description="연령대 하한 (선택)"),
+    age_max: int | None = Query(None, ge=0, le=120, description="연령대 상한 (선택)"),
+    height_min: int | None = Query(None, ge=100, le=250, description="키 하한 cm (선택)"),
+    height_max: int | None = Query(None, ge=100, le=250, description="키 상한 cm (선택)"),
+    role_age_range: str | None = Query(
+        None,
+        description="영상에서 **연기한 역할**의 연령대 (선택). "
+        "child_actor/elementary/middle_school/high_school/20s/30s/40s/50s/60s/70s_plus. "
+        "인재의 실제 나이(age_min/age_max)와 별개 — 20대 배우가 40대 엄마 역을 한 장면이 잡힌다.",
+    ),
     limit: int = Query(20, ge=1, le=50),
     current=Depends(get_current_account),
     db: AsyncSession = Depends(get_db),
 ):
     """하이브리드 검색.
 
-    1) 주 분야 + 성별 (필수) + LLM 추출 조건(나이·키·몸무게·특기·언어)으로 DB 1차 필터 → 후보 account_id
+    1) 주 분야 + 성별 (필수) + 화면에서 고른 연령대·키 + LLM 이 문장에서 추출한
+       조건(나이·키·몸무게·특기·언어)으로 DB 1차 필터 → 후보 account_id
     2) 후보 account 로 한정해 검색 문장 전체로 RAG 2차 벡터 검색
+       (영상 분석으로 쌓인 scene 단위 RAG 데이터가 검색 대상)
     AGENCY / ADMIN 만 접근.
+
+    화면에서 직접 고른 조건은 문장에서 추출한 값보다 우선한다.
     """
     account, _admin = current
     if account.account_type not in ("AGENCY", "ADMIN"):
@@ -125,12 +146,27 @@ async def search_talents(
         raise HTTPException(status_code=400, detail="INVALID_MAIN_CATEGORY")
     if gender not in ("MALE", "FEMALE"):
         raise HTTPException(status_code=400, detail="INVALID_GENDER")
+    if role_age_range and role_age_range not in _ROLE_AGE_RANGES:
+        raise HTTPException(status_code=400, detail="INVALID_ROLE_AGE_RANGE")
 
     config = get_settings()
 
-    # ── 1) LLM 파싱 (나이·키·몸무게·특기·언어). 성별은 명시 선택이 우선이라 무시 ──
+    # ── 1) LLM 파싱 (나이·키·몸무게·특기·언어) ──
     cond = await asyncio.to_thread(parse_search_query, q, config.OPENAI_API_KEY)
     cond["gender"] = None  # 명시 성별 필터가 authoritative
+
+    # 화면에서 직접 고른 조건이 문장 추출값을 덮어쓴다.
+    # (사용자가 "20대" 를 골랐는데 문장의 "서른쯤" 때문에 걸러지면 안 된다)
+    explicit = {
+        "age_min": age_min,
+        "age_max": age_max,
+        "height_min": height_min,
+        "height_max": height_max,
+    }
+    scene_filter = {"role_age_range": role_age_range}
+    for key, value in explicit.items():
+        if value is not None:
+            cond[key] = value
 
     # ── 2) DB 1차 필터: 주 분야 + 성별(필수) + LLM 조건 → 후보 account_id + 프로필 ──
     profiles: dict[int, dict] = {}
@@ -167,19 +203,28 @@ async def search_talents(
             "conditions": cond,
             "main_category": main_category,
             "gender": gender,
+            "explicit": explicit,
+            "scene_filter": scene_filter,
             "count": 0,
             "results": [],
         }
 
     # ── 3) RAG 2차 (후보 account 로 한정) ──
-    qfilter = models.Filter(
-        must=[
+    must = [
+        models.FieldCondition(
+            key="account_id",
+            match=models.MatchAny(any=list(candidate_ids)),
+        )
+    ]
+    if role_age_range:
+        # 인재의 실제 나이가 아니라 **그 장면에서 연기한 역할**의 연령대로 거른다.
+        must.append(
             models.FieldCondition(
-                key="account_id",
-                match=models.MatchAny(any=list(candidate_ids)),
+                key="age_range",
+                match=models.MatchValue(value=role_age_range),
             )
-        ]
-    )
+        )
+    qfilter = models.Filter(must=must)
 
     # 벡터 검색은 검색 문장 전체로. (의미 단어만 떼면 "수다스런" 같은 단어는 임베딩이
     #  빈약해져 유사도가 불안정 — 전체 문장이 맥락이 풍부해 더 안정적.)
@@ -242,6 +287,8 @@ async def search_talents(
         "conditions": cond,
         "main_category": main_category,
         "gender": gender,
+        "explicit": explicit,
+        "scene_filter": scene_filter,
         "count": len(raw),
         "results": raw,
     }

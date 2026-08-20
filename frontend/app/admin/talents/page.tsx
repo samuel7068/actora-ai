@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
-import { AlertTriangle, Loader2, Trash2, UserPlus, Users } from "lucide-react";
+import { AlertTriangle, Loader2, Search, Trash2, UserPlus, Users } from "lucide-react";
 
 import DashboardHeader from "@/components/DashboardHeader";
 import { useDashboardGuard } from "@/components/DashboardGuard";
@@ -49,8 +49,10 @@ function completionColor(rate: number | null): string {
   return "text-red-300";
 }
 
-const TH = "px-3 py-2 text-left font-semibold text-white/70 whitespace-nowrap";
-const TD = "px-3 py-2 text-white/90 whitespace-nowrap";
+// 헤더·데이터 모두 가로 중앙정렬
+const PAGE_SIZE = 20;
+const TH = "px-3 py-2 text-center font-semibold text-white/70 whitespace-nowrap";
+const TD = "px-3 py-2 text-center text-white/90 whitespace-nowrap";
 
 export default function AdminTalentsPage() {
   const ready = useDashboardGuard("ADMIN");
@@ -62,20 +64,54 @@ export default function AdminTalentsPage() {
   const [deleteTarget, setDeleteTarget] = useState<TalentRow | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  // 검색 입력값 — 검색 버튼을 눌러야 applied 로 넘어가 조회에 반영된다
+  const [q, setQ] = useState("");
+  const [gender, setGender] = useState("");
+  const [applied, setApplied] = useState({ q: "", gender: "" });
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+
   const fetchList = useCallback(async () => {
     setLoading(true);
     setErr(null);
     try {
-      const res = await api.get<{ items: TalentRow[]; total: number }>(
-        "/admin/talents",
-      );
+      const res = await api.get<{
+        items: TalentRow[];
+        total: number;
+        total_pages: number;
+      }>("/admin/talents", {
+        params: {
+          q: applied.q || undefined,
+          gender: applied.gender || undefined,
+          page,
+          size: PAGE_SIZE,
+        },
+      });
       setItems(res.data.items);
+      setTotal(res.data.total);
+      setTotalPages(res.data.total_pages);
     } catch {
       setErr("목록을 불러오지 못했습니다.");
       setItems([]);
+      setTotal(0);
+      setTotalPages(1);
     } finally {
       setLoading(false);
     }
+  }, [applied, page]);
+
+  // 검색은 항상 1페이지부터
+  const runSearch = useCallback(() => {
+    setPage(1);
+    setApplied({ q: q.trim(), gender });
+  }, [q, gender]);
+
+  const resetSearch = useCallback(() => {
+    setQ("");
+    setGender("");
+    setPage(1);
+    setApplied({ q: "", gender: "" });
   }, []);
 
   // 인재 등록: 이름만 받아 생성 → 곧바로 프로필 편집 모달 오픈
@@ -149,6 +185,44 @@ export default function AdminTalentsPage() {
           </button>
         </div>
 
+        {/* 검색 — 이름(예명 포함) · 성별 */}
+        <div className="mb-4 flex flex-wrap gap-2">
+          <input
+            type="text"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && runSearch()}
+            placeholder="이름 또는 예명"
+            className="w-56 rounded-lg border border-white/20 bg-white/10 backdrop-blur-md px-3 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:border-white/40"
+          />
+          <select
+            value={gender}
+            onChange={(e) => setGender(e.target.value)}
+            className="rounded-lg border border-white/20 bg-white/10 backdrop-blur-md px-3 py-2 text-sm text-white focus:outline-none focus:border-white/40 [&>option]:text-zinc-900"
+          >
+            <option value="">성별 전체</option>
+            <option value="FEMALE">여</option>
+            <option value="MALE">남</option>
+          </select>
+          <button
+            type="button"
+            onClick={runSearch}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-amber-100 text-zinc-900 px-4 py-2 text-sm font-semibold hover:bg-amber-200 transition-colors"
+          >
+            <Search className="w-4 h-4" />
+            검색
+          </button>
+          {(applied.q || applied.gender) && (
+            <button
+              type="button"
+              onClick={resetSearch}
+              className="rounded-lg border border-white/20 px-4 py-2 text-sm text-white/70 hover:bg-white/10 transition-colors"
+            >
+              초기화
+            </button>
+          )}
+        </div>
+
         {err && (
           <div className="mb-4 rounded-lg bg-red-500/20 border border-red-400/40 text-red-100 text-sm px-4 py-2.5">
             {err}
@@ -162,12 +236,14 @@ export default function AdminTalentsPage() {
           </div>
         ) : items.length === 0 ? (
           <div className="rounded-xl border border-white/15 bg-white/5 backdrop-blur-md p-10 text-center text-white/70">
-            등록된 인재가 없습니다.
+            {applied.q || applied.gender
+              ? "검색 결과가 없습니다."
+              : "등록된 인재가 없습니다."}
           </div>
         ) : (
           <div className="rounded-xl border border-white/15 bg-white/5 backdrop-blur-md overflow-hidden">
             <div className="text-xs text-white/60 px-4 py-2 border-b border-white/10">
-              총 <b className="text-white">{items.length}</b>명
+              총 <b className="text-white">{total}</b>명{totalPages > 1 && <span className="ml-2 text-white/40">· {page} / {totalPages} 페이지</span>}
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -263,6 +339,42 @@ export default function AdminTalentsPage() {
                 </tbody>
               </table>
             </div>
+
+            {/* 페이지네이션 — 페이지가 하나뿐이면 감춘다 */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-1 px-4 py-3 border-t border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page <= 1}
+                  className="rounded-lg px-3 py-1.5 text-sm text-white/70 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  이전
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => setPage(n)}
+                    className={
+                      n === page
+                        ? "min-w-[2rem] rounded-lg bg-amber-100 text-zinc-900 px-2.5 py-1.5 text-sm font-semibold"
+                        : "min-w-[2rem] rounded-lg px-2.5 py-1.5 text-sm text-white/70 hover:bg-white/10 transition-colors"
+                    }
+                  >
+                    {n}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page >= totalPages}
+                  className="rounded-lg px-3 py-1.5 text-sm text-white/70 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  다음
+                </button>
+              </div>
+            )}
           </div>
         )}
       </main>

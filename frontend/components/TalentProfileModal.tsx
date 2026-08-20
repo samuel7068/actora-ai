@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Check, ImagePlus, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import BirthDateSelect from "@/components/BirthDateSelect";
 import PortfolioPanel from "@/components/PortfolioPanel";
 import { api, tokenStorage } from "@/lib/api";
 
@@ -536,11 +537,10 @@ export default function TalentProfileModal({ open, onClose, accountId }: Props) 
                         </select>
                       </Row>
                       <Row label="생년월일 *">
-                        <input
-                          type="date"
+                        <BirthDateSelect
                           value={birthDate}
-                          onChange={(e) => setBirthDate(e.target.value)}
-                          className={inputCls}
+                          onChange={setBirthDate}
+                          className={selectCls}
                         />
                       </Row>
                       <Row label="나이 (자동 계산)">

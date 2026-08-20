@@ -39,11 +39,29 @@ type Conditions = {
   languages: string[];
 };
 
+// 키·나이는 위에서 따로 고르므로, 예시는 영상에서만 알 수 있는
+// 감정·연기·분위기 위주로 둔다.
 const EXAMPLES = [
-  "키 170 이상 친근한 인상",
-  "영어 가능한 청순한 이미지",
-  "자전거 잘 타는 활동적인",
+  "울음을 참으며 눌러 담는 감정 연기",
+  "분노를 터뜨리는 격한 장면",
   "차분한 아나운서 느낌",
+  "밝고 친근한 리액션",
+  "영어 가능한 청순한 이미지",
+];
+
+// 영상 속 **역할**의 연령대 — scene payload 의 age_range.
+// 인재의 실제 나이와 별개다 (20대 배우가 40대 엄마 역을 연기한 장면).
+const ROLE_AGE_OPTIONS: { value: string; label: string }[] = [
+  { value: "child_actor", label: "아역 (5~7세)" },
+  { value: "elementary", label: "초등 (8~12세)" },
+  { value: "middle_school", label: "중등 (13~16세)" },
+  { value: "high_school", label: "고등 (17~19세)" },
+  { value: "20s", label: "20대 역" },
+  { value: "30s", label: "30대 역" },
+  { value: "40s", label: "40대 역" },
+  { value: "50s", label: "50대 역" },
+  { value: "60s", label: "60대 역" },
+  { value: "70s_plus", label: "70대 이상 역" },
 ];
 
 // 주 분야 (필수) — talent_master.main_category 와 동일 코드
@@ -61,6 +79,26 @@ const GENDER_OPTIONS: { value: string; label: string }[] = [
   { value: "FEMALE", label: "여성" },
   { value: "MALE", label: "남성" },
 ];
+
+// 연령대 (선택) — 고르면 문장에서 추출한 나이 조건보다 우선한다
+type RangeOption = { value: string; label: string; min: number | null; max: number | null };
+const AGE_OPTIONS: RangeOption[] = [
+  { value: "10s", label: "10대", min: 10, max: 19 },
+  { value: "20s", label: "20대", min: 20, max: 29 },
+  { value: "30s", label: "30대", min: 30, max: 39 },
+  { value: "40s", label: "40대", min: 40, max: 49 },
+  { value: "50s", label: "50대 이상", min: 50, max: null },
+];
+// 키 (선택)
+const HEIGHT_OPTIONS: RangeOption[] = [
+  { value: "-159", label: "159cm 이하", min: null, max: 159 },
+  { value: "160-169", label: "160~169cm", min: 160, max: 169 },
+  { value: "170-179", label: "170~179cm", min: 170, max: 179 },
+  { value: "180-", label: "180cm 이상", min: 180, max: null },
+];
+
+const findRange = (opts: RangeOption[], value: string) =>
+  opts.find((o) => o.value === value) ?? null;
 
 // 유사도(0~1)에 따른 3구간 판정 — 적합(45%↑) / 보통(35~45%) / 부족(35%↓)
 function scoreTier(score: number): { label: string; color: string } {
@@ -121,10 +159,19 @@ export default function TalentSearchView() {
   // 필수 필터 — 주 분야 / 성별
   const [mainCategory, setMainCategory] = useState("");
   const [gender, setGender] = useState("");
+  // 선택 필터 — 연령대 / 키
+  const [ageRange, setAgeRange] = useState("");
+  const [heightRange, setHeightRange] = useState("");
+  // 영상 장면 조건 — 연기한 역할의 연령대
+  const [roleAgeRange, setRoleAgeRange] = useState("");
   // 마지막으로 검색에 적용된 필터(결과 헤더 칩 표시용)
-  const [applied, setApplied] = useState<{ category: string; gender: string } | null>(
-    null,
-  );
+  const [applied, setApplied] = useState<{
+    category: string;
+    gender: string;
+    age: string;
+    height: string;
+    roleAge: string;
+  } | null>(null);
 
   // 공용 경로로 직접 들어온 경우 인증 상태를 한 번 복원해 둔다.
   // (대시보드 경로는 가드에서 이미 복원하므로 account 가 있으면 생략)
@@ -156,17 +203,36 @@ export default function TalentSearchView() {
     setLoading(true);
     setResults(null);
     setConditions(null);
+    const age = findRange(AGE_OPTIONS, ageRange);
+    const height = findRange(HEIGHT_OPTIONS, heightRange);
     try {
       const res = await api.get<{
         count: number;
         results: SearchResult[];
         conditions: Conditions;
       }>("/agency/search", {
-        params: { q: term, main_category: mainCategory, gender, limit: 30 },
+        params: {
+          q: term,
+          main_category: mainCategory,
+          gender,
+          // 선택하지 않은 범위는 아예 보내지 않는다 (undefined 는 axios 가 제외)
+          age_min: age?.min ?? undefined,
+          age_max: age?.max ?? undefined,
+          height_min: height?.min ?? undefined,
+          height_max: height?.max ?? undefined,
+          role_age_range: roleAgeRange || undefined,
+          limit: 30,
+        },
       });
       setResults(res.data.results);
       setConditions(res.data.conditions);
-      setApplied({ category: mainCategory, gender });
+      setApplied({
+        category: mainCategory,
+        gender,
+        age: ageRange,
+        height: heightRange,
+        roleAge: roleAgeRange,
+      });
     } catch {
       setErr("검색에 실패했습니다. 잠시 후 다시 시도해 주세요.");
     } finally {
@@ -196,76 +262,140 @@ export default function TalentSearchView() {
           인재 탐색
         </h1>
         <p className="mt-1 text-white/80 drop-shadow">
-          <b className="text-amber-100">주 분야·성별</b>을 먼저 선택하고, 이미지·분위기를 한 문장으로
-          검색하세요. 나이·키·특기·언어는 문장에서 자동으로 인식해 거릅니다.
+          <b className="text-amber-100">인재 프로필</b>로 후보를 좁히고,{" "}
+          <b className="text-amber-100">영상 장면</b>에서 연기·연출된 모습을 문장으로 검색합니다.
+        </p>
+        <p className="mt-1 text-white/60 text-sm drop-shadow">
+          실제 나이와 연기한 나이대는 따로 고를 수 있습니다. 특기·언어는 검색 문장에서 자동 인식합니다.
         </p>
 
-        {/* 필수 필터 — 주 분야 / 성별 */}
-        <div className="mt-8 flex flex-wrap gap-2">
-          <select
-            value={mainCategory}
-            onChange={(e) => setMainCategory(e.target.value)}
-            className="rounded-lg border border-white/20 bg-white/10 backdrop-blur-md px-3 py-2.5 text-white focus:outline-none focus:border-white/40 [&>option]:text-zinc-900"
-          >
-            <option value="">주 분야 *</option>
-            {CATEGORY_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-          <select
-            value={gender}
-            onChange={(e) => setGender(e.target.value)}
-            className="rounded-lg border border-white/20 bg-white/10 backdrop-blur-md px-3 py-2.5 text-white focus:outline-none focus:border-white/40 [&>option]:text-zinc-900"
-          >
-            <option value="">성별 *</option>
-            {GENDER_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* 검색 입력 */}
-        <div className="mt-2 flex gap-2">
-          <input
-            type="text"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && runSearch(q)}
-            placeholder="예: 키 170 이상 자전거 잘 타는 친근한 인상"
-            className="flex-1 rounded-lg border border-white/20 bg-white/10 backdrop-blur-md px-4 py-2.5 text-white placeholder-white/40 focus:outline-none focus:border-white/40"
-          />
-          <button
-            type="button"
-            onClick={() => runSearch(q)}
-            disabled={loading || !q.trim() || !mainCategory || !gender}
-            className="inline-flex items-center gap-2 rounded-lg bg-amber-100 text-zinc-900 px-5 py-2.5 text-sm font-semibold hover:bg-amber-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Search className="w-4 h-4" />
-            )}
-            검색
-          </button>
-        </div>
-
-        {/* 예시 칩 — 클릭 시 검색 문장만 채움 (주 분야·성별은 직접 선택) */}
-        <div className="mt-3 flex flex-wrap gap-2">
-          {EXAMPLES.map((ex) => (
-            <button
-              key={ex}
-              type="button"
-              onClick={() => setQ(ex)}
-              className="px-3 py-1 rounded-full border border-white/20 bg-white/5 text-white/80 text-xs hover:bg-white/15 transition-colors"
+        {/* ── 구역 1: 인재 프로필 — 등록된 실제 정보로 후보를 좁힌다 ── */}
+        <section className="mt-8 rounded-xl border border-white/15 bg-white/5 backdrop-blur-md p-4">
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            <span className="w-5 h-5 shrink-0 rounded-full bg-amber-100 text-zinc-900 text-[11px] font-bold flex items-center justify-center">
+              1
+            </span>
+            <h2 className="text-sm font-semibold text-white">인재 프로필</h2>
+            <span className="text-xs text-white/50">
+              프로필에 등록된 실제 정보 — 주 분야·성별은 필수
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <select
+              value={mainCategory}
+              onChange={(e) => setMainCategory(e.target.value)}
+              className="rounded-lg border border-white/20 bg-white/10 backdrop-blur-md px-3 py-2.5 text-white focus:outline-none focus:border-white/40 [&>option]:text-zinc-900"
             >
-              {ex}
+              <option value="">주 분야 *</option>
+              {CATEGORY_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+            <select
+              value={gender}
+              onChange={(e) => setGender(e.target.value)}
+              className="rounded-lg border border-white/20 bg-white/10 backdrop-blur-md px-3 py-2.5 text-white focus:outline-none focus:border-white/40 [&>option]:text-zinc-900"
+            >
+              <option value="">성별 *</option>
+              {GENDER_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+            <select
+              value={ageRange}
+              onChange={(e) => setAgeRange(e.target.value)}
+              className="rounded-lg border border-white/20 bg-white/10 backdrop-blur-md px-3 py-2.5 text-white focus:outline-none focus:border-white/40 [&>option]:text-zinc-900"
+            >
+              <option value="">실제 나이 (전체)</option>
+              {AGE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+            <select
+              value={heightRange}
+              onChange={(e) => setHeightRange(e.target.value)}
+              className="rounded-lg border border-white/20 bg-white/10 backdrop-blur-md px-3 py-2.5 text-white focus:outline-none focus:border-white/40 [&>option]:text-zinc-900"
+            >
+              <option value="">키 (전체)</option>
+              {HEIGHT_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </section>
+
+        {/* ── 구역 2: 영상 장면 — 업로드된 영상에서 연기·연출된 모습 (RAG) ── */}
+        <section className="mt-4 rounded-xl border border-white/15 bg-white/5 backdrop-blur-md p-4">
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            <span className="w-5 h-5 shrink-0 rounded-full bg-amber-100 text-zinc-900 text-[11px] font-bold flex items-center justify-center">
+              2
+            </span>
+            <h2 className="text-sm font-semibold text-white">영상 장면</h2>
+            <span className="text-xs text-white/50">
+              영상에서 연기·연출된 모습 — 실제 나이와 달라도 됩니다
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <select
+              value={roleAgeRange}
+              onChange={(e) => setRoleAgeRange(e.target.value)}
+              className="rounded-lg border border-white/20 bg-white/10 backdrop-blur-md px-3 py-2.5 text-white focus:outline-none focus:border-white/40 [&>option]:text-zinc-900"
+            >
+              <option value="">연기한 나이대 (전체)</option>
+              {ROLE_AGE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="mt-2 flex gap-2">
+            <input
+              type="text"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && runSearch(q)}
+              placeholder="예: 울음을 참으며 눌러 담는 감정 연기"
+              className="flex-1 rounded-lg border border-white/20 bg-white/10 backdrop-blur-md px-4 py-2.5 text-white placeholder-white/40 focus:outline-none focus:border-white/40"
+            />
+            <button
+              type="button"
+              onClick={() => runSearch(q)}
+              disabled={loading || !q.trim() || !mainCategory || !gender}
+              className="inline-flex items-center gap-2 rounded-lg bg-amber-100 text-zinc-900 px-5 py-2.5 text-sm font-semibold hover:bg-amber-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Search className="w-4 h-4" />
+              )}
+              검색
             </button>
-          ))}
-        </div>
+          </div>
+
+          {/* 예시 칩 — 클릭 시 검색 문장만 채움 */}
+          <div className="mt-3 flex flex-wrap gap-2">
+            {EXAMPLES.map((ex) => (
+              <button
+                key={ex}
+                type="button"
+                onClick={() => setQ(ex)}
+                className="px-3 py-1 rounded-full border border-white/20 bg-white/5 text-white/80 text-xs hover:bg-white/15 transition-colors"
+              >
+                {ex}
+              </button>
+            ))}
+          </div>
+        </section>
 
         {err && (
           <div className="mt-4 rounded-lg bg-red-500/20 border border-red-400/40 text-red-100 text-sm px-4 py-2.5">
@@ -286,6 +416,19 @@ export default function TalentSearchView() {
                     applied.category}
                   {" · "}
                   {applied.gender === "FEMALE" ? "여성" : "남성"}
+                  {/* 화면에서 직접 고른 연령대·키는 문장 추출 조건과 구분해 함께 표시 */}
+                  {applied.age &&
+                    ` · ${findRange(AGE_OPTIONS, applied.age)?.label ?? applied.age}`}
+                  {applied.height &&
+                    ` · ${findRange(HEIGHT_OPTIONS, applied.height)?.label ?? applied.height}`}
+                </span>
+              )}
+              {/* 영상 장면 조건은 프로필 조건과 색을 달리해 구분 */}
+              {applied?.roleAge && (
+                <span className="px-2 py-0.5 rounded-full bg-sky-400/25 text-sky-100 text-[11px] font-semibold">
+                  연기{" "}
+                  {ROLE_AGE_OPTIONS.find((o) => o.value === applied.roleAge)?.label ??
+                    applied.roleAge}
                 </span>
               )}
               {chips.map((c) => (

@@ -29,19 +29,74 @@ VECTOR_SIZE = 1536
 _ID_STRIDE = 1000
 
 
+def _text(v: Any) -> str:
+    return v.strip() if isinstance(v, str) and v.strip() else ""
+
+
+def _joined(v: Any) -> str:
+    return " ".join(str(k) for k in v if k).strip() if isinstance(v, list) else ""
+
+
 def _scene_embed_text(scene: dict[str, Any]) -> str:
-    """scene_summary + search_keywords 를 합쳐 임베딩 입력 텍스트 생성."""
-    parts: list[str] = []
-    summary = scene.get("scene_summary")
-    if isinstance(summary, str) and summary.strip():
-        parts.append(summary.strip())
-    for key in ("search_keywords", "mood_keywords"):
-        kws = scene.get(key)
-        if isinstance(kws, list):
-            kw = " ".join(str(k) for k in kws if k)
-            if kw.strip():
-                parts.append(kw.strip())
-    return " ".join(parts).strip()
+    """임베딩 입력 텍스트 생성.
+
+    scene_summary·키워드에 더해 **감정과 표현 방식** 을 함께 싣는다.
+    "오열 연기", "분노 폭발", "눌러 담는 슬픔" 같은 검색은 감정 서술이
+    임베딩에 들어가 있어야만 걸린다 (이전에는 요약·키워드만 넣어서
+    GPT 가 뽑아낸 감정·표정·음색 정보가 검색에 전혀 반영되지 않았다).
+    """
+    emotion = scene.get("emotion_analysis") or {}
+    physical = scene.get("physical_expression") or {}
+    speech = scene.get("speech_analysis") or {}
+    acting = scene.get("acting_analysis") or {}
+
+    parts: list[str] = [
+        _text(scene.get("scene_summary")),
+        _joined(scene.get("search_keywords")),
+        _joined(scene.get("mood_keywords")),
+        # 감정 — 검색의 핵심 축
+        _text(emotion.get("primary_emotion")),
+        _joined(emotion.get("emotion_keywords")),
+        _text(emotion.get("intensity")),
+        _text(emotion.get("emotion_arc")),
+        _joined(emotion.get("expression_channels")),
+        _text(emotion.get("emotion_detail")),
+        # 감정이 드러나는 경로 — 표정 / 음색 / 연기 톤
+        _joined(physical.get("facial_expression_keywords")),
+        _joined(speech.get("tone_keywords")),
+        _joined(acting.get("acting_style")),
+        _text(acting.get("emotion_delivery")),
+    ]
+    return " ".join(p for p in parts if p).strip()
+
+
+# role.age_range 정규 값 — 프롬프트(portfolio_video_analysis_*.toml)와 동일.
+# 긴 값을 먼저 두어야 "70s_plus" 가 "70s" 로 잘리지 않는다.
+_AGE_RANGE_CANON = (
+    "child_actor", "elementary", "middle_school", "high_school",
+    "70s_plus", "60s", "50s", "40s", "30s", "20s",
+)
+
+
+def _normalize_age_range(value: Any) -> str | None:
+    """GPT 가 "20s_early" 처럼 목록에 없는 변형을 낼 때가 있어 정규 값으로 맞춘다.
+
+    맞추지 못하면 None — 잘못된 값으로 필터 검색을 오염시키는 것보다 낫다.
+    """
+    if not isinstance(value, str) or not value.strip():
+        return None
+    v = value.strip().lower()
+    if v in _AGE_RANGE_CANON:
+        return v
+    # "20s_early" 처럼 정규 값을 품고 있는 경우
+    for canon in _AGE_RANGE_CANON:
+        if canon in v:
+            return canon
+    # "70s" 처럼 정규 값의 앞부분만 온 경우 (→ "70s_plus")
+    for canon in _AGE_RANGE_CANON:
+        if len(v) >= 2 and canon.startswith(v):
+            return canon
+    return None
 
 
 def _scene_payload(
@@ -51,6 +106,7 @@ def _scene_payload(
     role = scene.get("role") or {}
     era = scene.get("era") or {}
     appearance = scene.get("appearance") or {}
+    emotion = scene.get("emotion_analysis") or {}
     return {
         "account_id": account_id,
         "talent_media_id": talent_media_id,
@@ -59,7 +115,7 @@ def _scene_payload(
         "scene_end_sec": scene.get("scene_end_sec"),
         "search_keywords": scene.get("search_keywords") or [],
         "mood_keywords": scene.get("mood_keywords") or [],
-        "age_range": role.get("age_range"),
+        "age_range": _normalize_age_range(role.get("age_range")),
         "gender_appearance": role.get("gender_appearance"),
         "character_type": role.get("character_type"),
         "occupation": role.get("occupation"),
@@ -70,6 +126,11 @@ def _scene_payload(
         "body_type": appearance.get("body_type"),
         "body_style": appearance.get("body_style"),
         "scene_summary": scene.get("scene_summary"),
+        # 감정 — 필터 검색용 (예: primary_emotion="분노", intensity="폭발적")
+        "primary_emotion": emotion.get("primary_emotion"),
+        "emotion_keywords": emotion.get("emotion_keywords") or [],
+        "emotion_intensity": emotion.get("intensity"),
+        "emotion_arc": emotion.get("emotion_arc"),
         # 단계 3.5 얼굴 식별 결과 — 검색 시 "인재가 실제로 확인된 scene" 필터링용.
         # None 이면 식별을 수행하지 않은 영상 (프로필 사진 없음 등).
         "target_identified": scene.get("target_identified"),

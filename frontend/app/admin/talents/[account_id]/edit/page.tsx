@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Film, ImagePlus, Loader2, Save } from "lucide-react";
 
+import BirthDateSelect from "@/components/BirthDateSelect";
 import DashboardHeader from "@/components/DashboardHeader";
 import { useDashboardGuard } from "@/components/DashboardGuard";
 import { api, tokenStorage } from "@/lib/api";
@@ -257,8 +258,11 @@ export default function AdminTalentEditPage() {
                 </div>
                 <div>
                   <label className={LABEL}>생년월일</label>
-                  <input className={FIELD} type="date" value={form.birth_date}
-                    onChange={(e) => set("birth_date", e.target.value)} />
+                  <BirthDateSelect
+                    value={form.birth_date}
+                    onChange={(v) => set("birth_date", v)}
+                    className={FIELD}
+                  />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
