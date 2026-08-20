@@ -66,6 +66,9 @@ type ProgressEvent =
       target_similarity?: number | null;
       error?: string;
     }
+  | { type: "start" }
+  // 프록시가 연결을 끊지 않도록 서버가 주기적으로 보내는 신호 (내용 없음)
+  | { type: "ping" }
   | { type: "summary"; summary: string }
   | { type: "result"; result: AnalyzeResponse }
   | { type: "error"; error: string; status?: number };
@@ -95,6 +98,7 @@ export default function VideoAnalysisModal({ open, onClose, accountId }: Props) 
   const [feed, setFeed] = useState<FeedItem[]>([]);
   const [current, setCurrent] = useState<string>("");
   const feedEndRef = useRef<HTMLDivElement>(null);
+  const startedAtRef = useRef<number>(0);
 
   // 모달 닫힐 때 상태 정리
   useEffect(() => {
@@ -142,6 +146,15 @@ export default function VideoAnalysisModal({ open, onClose, accountId }: Props) 
 
   const handleEvent = (ev: ProgressEvent) => {
     switch (ev.type) {
+      case "start":
+        setCurrent("영상 업로드 완료 — 분석을 시작합니다");
+        break;
+      case "ping": {
+        // 오래 걸리는 단계에서도 살아 있다는 걸 보여준다
+        const sec = Math.round((Date.now() - startedAtRef.current) / 1000);
+        setCurrent((c) => `${c.replace(/ \(\d+초 경과\)$/, "")} (${sec}초 경과)`);
+        break;
+      }
       case "stage":
         setFeed((f) => [
           ...f,
@@ -207,6 +220,7 @@ export default function VideoAnalysisModal({ open, onClose, accountId }: Props) 
     setResult(null);
     setFeed([]);
     setCurrent("영상 업로드 중…");
+    startedAtRef.current = Date.now();
     try {
       const form = new FormData();
       form.append("file", videoFile);

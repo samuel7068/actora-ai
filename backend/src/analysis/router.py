@@ -845,11 +845,23 @@ async def analyze_stream(
         finally:
             queue.put_nowait(None)  # 종료 신호
 
+    # 프록시(nginx·로드밸런서)는 데이터가 흐르지 않는 연결을 끊는다.
+    # 분석은 단계 사이(업로드 수신·ffmpeg 정규화·STT)에 수십 초 침묵할 수 있어,
+    # 그 사이 keep-alive 를 흘려보내 연결이 유지되게 한다.
+    HEARTBEAT_SEC = 15
+
     async def gen():
         task = asyncio.create_task(run())
+        # 첫 바이트를 즉시 보낸다 — 첫 단계가 끝날 때까지 기다리면
+        # 그 침묵만으로 프록시 타임아웃(기본 60초)에 걸린다.
+        yield json.dumps({"type": "start"}, ensure_ascii=False) + "\n"
         try:
             while True:
-                event = await queue.get()
+                try:
+                    event = await asyncio.wait_for(queue.get(), timeout=HEARTBEAT_SEC)
+                except asyncio.TimeoutError:
+                    yield json.dumps({"type": "ping"}, ensure_ascii=False) + "\n"
+                    continue
                 if event is None:
                     break
                 yield json.dumps(event, ensure_ascii=False) + "\n"
