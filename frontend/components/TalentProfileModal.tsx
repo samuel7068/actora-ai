@@ -377,14 +377,14 @@ export default function TalentProfileModal({ open, onClose, accountId }: Props) 
     ],
   );
 
-  const onSubmit = async () => {
-    setErr(null);
-    if (!requiredFilled) {
-      setErr("필수 항목을 모두 입력해주세요.");
-      return;
-    }
-    setSaving(true);
-    try {
+  /**
+   * 저장할 값을 만든다.
+   *
+   * 함수로 빼 둔 이유: 로드 직후의 값을 이 함수로 스냅샷해 두고, 확인을 누를 때
+   * 다시 만든 값과 비교한다. 그래야 "아무것도 바꾸지 않았는데 저장되는" 일이 없다.
+   * 비교와 실제 저장이 같은 코드를 써야 어긋나지 않는다.
+   */
+  const buildPayload = (): Record<string, unknown> => {
       const payload: Record<string, unknown> = {
         gender,
         birth_date: birthDate,
@@ -422,7 +422,41 @@ export default function TalentProfileModal({ open, onClose, accountId }: Props) 
       if (tiktokUrl.trim()) payload.tiktok_url = tiktokUrl.trim();
       if (careerLevel) payload.career_level = careerLevel;
       if (careerYears !== "") payload.career_years = Number(careerYears);
+      return payload;
+  };
 
+  // 로드한 값의 지문. 확인을 누를 때 이것과 같으면 저장하지 않는다.
+  const loadedSnapshot = useRef<string | null>(null);
+
+  // 로드가 끝난 뒤(state 가 반영된 렌더에서) 한 번만 스냅샷을 남긴다.
+  // 모달을 닫으면 비워, 다시 열 때 새로 불러온 값으로 다시 잡는다.
+  useEffect(() => {
+    if (!open) {
+      loadedSnapshot.current = null;
+      return;
+    }
+    if (loading || loadedSnapshot.current !== null) return;
+    loadedSnapshot.current = JSON.stringify(buildPayload());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, loading]);
+
+  const onSubmit = async () => {
+    setErr(null);
+
+    const payload = buildPayload();
+    // 바뀐 게 없으면 저장하지 않고 닫는다.
+    // 필수 항목 검사보다 먼저 본다 — 아무것도 건드리지 않았다면 검증할 것도 없다.
+    if (loadedSnapshot.current === JSON.stringify(payload)) {
+      onClose();
+      return;
+    }
+
+    if (!requiredFilled) {
+      setErr("필수 항목을 모두 입력해주세요.");
+      return;
+    }
+    setSaving(true);
+    try {
       const res = await api.put<ProfileResponse>(profilePath, payload);
       setCompletionRate(res.data.profile_completion_rate);
       setSavedFlash(true);
@@ -448,7 +482,7 @@ export default function TalentProfileModal({ open, onClose, accountId }: Props) 
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center px-4 py-6"
+          className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center px-4 py-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -460,32 +494,42 @@ export default function TalentProfileModal({ open, onClose, accountId }: Props) 
             exit={{ opacity: 0, y: 24, scale: 0.96 }}
             transition={{ duration: 0.22, ease: "easeOut" }}
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-5xl h-[90vh] flex flex-col rounded-2xl bg-white shadow-2xl overflow-hidden"
+            className={MODAL_CLS}
           >
             <button
               type="button"
               onClick={onClose}
               aria-label="닫기"
-              className="absolute right-4 top-4 z-10 rounded-full p-1.5 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900"
+              className="absolute right-4 top-4 z-10 rounded-full p-1.5 text-white/50 transition-colors hover:bg-white/10 hover:text-white"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <div className="px-6 sm:px-8 pt-6 pb-3">
-              <h2 className="text-xl sm:text-2xl font-bold text-zinc-900">
+            <div className="px-6 sm:px-8 pt-6 pb-4">
+              <h2 className="text-xl sm:text-2xl font-bold text-white">
                 내 프로필 정보 입력
               </h2>
-              <p className="mt-1 text-sm text-zinc-500">
+              <p className="mt-1 text-sm text-white/55">
                 회원가입에 입력하지 않은 추가 정보를 입력하세요.
-                {completionRate != null && (
-                  <span className="ml-2 text-zinc-700 font-medium">
+              </p>
+
+              {/* 완성도는 숫자만 있으면 감이 안 온다 — 막대로 보여준다 */}
+              {completionRate != null && (
+                <div className="mt-3 flex items-center gap-3 max-w-md">
+                  <div className="h-1.5 flex-1 rounded-full bg-white/10 overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-amber-200 to-amber-100 transition-[width] duration-500"
+                      style={{ width: `${Math.min(100, Math.max(0, completionRate))}%` }}
+                    />
+                  </div>
+                  <span className="text-xs font-semibold text-amber-100 tabular-nums shrink-0">
                     완성도 {completionRate}%
                   </span>
-                )}
-              </p>
+                </div>
+              )}
             </div>
 
-            <div className="bg-white border-b border-zinc-200 px-6 sm:px-8">
+            <div className="border-b border-white/15 px-6 sm:px-8">
               <nav className="flex gap-1 overflow-x-auto -mb-px">
                 {tabs.map((t) => {
                   const isActive = activeTab === t.key;
@@ -497,15 +541,27 @@ export default function TalentProfileModal({ open, onClose, accountId }: Props) 
                       type="button"
                       onClick={() => setActiveTab(t.key)}
                       className={
-                        "relative px-3.5 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors " +
+                        // 브라우저 기본 포커스 링(파란 사각 테두리)이 amber 밑줄을
+                        // 가려서, 어느 탭이 켜져 있는지 오히려 헷갈렸다.
+                        // 기본 링은 끄고 키보드 이동용 표시는 amber 로 따로 준다.
+                        // 탭은 이 모달의 주 이동 수단이라 입력 라벨보다 눈에 먼저
+                        // 들어와야 한다. 라벨이 white/70 이므로 그보다 밝게 두고,
+                        // 글자도 한 단계 키운다.
+                        "relative px-4 py-3.5 text-[15px] sm:text-base font-medium " +
+                        "whitespace-nowrap border-b-2 transition-colors rounded-t-md " +
+                        "focus:outline-none focus-visible:ring-2 focus-visible:ring-inset " +
+                        "focus-visible:ring-amber-100/50 " +
                         (isActive
-                          ? "border-zinc-900 text-zinc-900"
-                          : "border-transparent text-zinc-500 hover:text-zinc-800")
+                          ? "border-amber-100 text-amber-100 font-semibold"
+                          : "border-transparent text-white/85 hover:text-white hover:border-white/25")
                       }
                     >
                       {t.label}
                       {showRequiredDot && (
-                        <span className="ml-1.5 inline-block w-1.5 h-1.5 rounded-full bg-red-500 align-middle" />
+                        <span
+                          className="ml-1.5 inline-block w-1.5 h-1.5 rounded-full bg-amber-300 align-middle"
+                          title="아직 채우지 않은 필수 항목이 있습니다"
+                        />
                       )}
                     </button>
                   );
@@ -515,7 +571,7 @@ export default function TalentProfileModal({ open, onClose, accountId }: Props) 
 
             <div className="flex-1 overflow-y-auto px-6 sm:px-8 py-4 space-y-6">
               {loading ? (
-                <div className="py-12 text-center text-zinc-500">불러오는 중…</div>
+                <div className="py-12 text-center text-white/50">불러오는 중…</div>
               ) : (
                 <>
                   {activeTab === "required" && (
@@ -547,7 +603,7 @@ export default function TalentProfileModal({ open, onClose, accountId }: Props) 
                         <div
                           className={
                             inputCls +
-                            " bg-zinc-50 text-zinc-700 font-medium cursor-default select-none"
+                            " !bg-white/[0.04] !border-white/10 text-white/60 font-medium cursor-default select-none"
                           }
                         >
                           {calcAge(birthDate) != null
@@ -742,7 +798,7 @@ export default function TalentProfileModal({ open, onClose, accountId }: Props) 
                       <div className="space-y-3">
                         {VISUAL_KEYWORD_GROUPS.map((g) => (
                           <div key={g.title}>
-                            <div className="text-[11px] font-semibold text-zinc-500 mb-1.5">
+                            <div className="text-[11px] font-semibold text-white/50 mb-1.5">
                               {g.title}
                             </div>
                             <ChipMultiSelect
@@ -880,21 +936,21 @@ export default function TalentProfileModal({ open, onClose, accountId }: Props) 
               )}
 
               {err && (
-                <div className="rounded-lg bg-red-50 text-red-700 text-sm px-4 py-2">
+                <div className="rounded-lg bg-red-500/15 border border-red-400/30 text-red-200 text-sm px-4 py-2">
                   {err}
                 </div>
               )}
             </div>
 
-            <div className="bg-white border-t border-zinc-200 px-6 sm:px-8 py-4 flex items-center justify-between gap-3">
-              <div className="text-xs text-zinc-500">
-                * 표시는 필수 항목입니다.
+            <div className="border-t border-white/15 bg-black/25 px-6 sm:px-8 py-4 flex items-center justify-between gap-3">
+              <div className="text-xs text-white/40">
+                <span className="text-amber-200">*</span> 표시는 필수 항목입니다.
               </div>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100 rounded-lg"
+                  className="px-4 py-2 text-sm font-medium text-white/60 rounded-lg transition-colors hover:bg-white/10 hover:text-white"
                 >
                   취소
                 </button>
@@ -904,8 +960,8 @@ export default function TalentProfileModal({ open, onClose, accountId }: Props) 
                   disabled={loading || saving || !requiredFilled}
                   className={`px-5 py-2 text-sm font-semibold rounded-lg inline-flex items-center gap-1.5 transition-colors ${
                     loading || saving || !requiredFilled
-                      ? "bg-zinc-200 text-zinc-400 cursor-not-allowed"
-                      : "bg-zinc-900 text-white hover:bg-zinc-800"
+                      ? "bg-white/10 text-white/30 cursor-not-allowed"
+                      : "bg-amber-100 text-zinc-900 hover:bg-amber-200 shadow-lg shadow-amber-100/10"
                   }`}
                 >
                   {savedFlash ? (
@@ -927,9 +983,33 @@ export default function TalentProfileModal({ open, onClose, accountId }: Props) 
   );
 }
 
+// h-[90vh] 고정이었던 탓에 '필수 정보' 처럼 짧은 탭에서 아래가 텅 비어 보였다.
+// max-h 로 두면 내용만큼만 차지한다.
+// 색은 여기 두 상수에서만 정한다. 톤을 바꾸려면 이 줄들만 고치면 전체에 반영된다.
+//
+// 밝기에 계층을 준다: 페이지(거의 검정) < 모달(zinc-900) > 입력칸(zinc-950).
+// 처음엔 모달을 zinc-950/95, 입력을 white/6% 로 했더니 둘이 거의 같은 색이어서
+// 칸의 경계가 보이지 않았다. 모달을 한 단계 밝히고 입력을 모달보다 어둡게 해,
+// 칸이 움푹 들어간 것처럼 읽히게 한다.
+//
+// 높이는 **고정**이다 (max-h 가 아니라 h).
+// max-h 로 두면 탭마다 내용 길이가 달라 모달 높이가 바뀌는데, 모달이 화면
+// 중앙 정렬이라 높이가 변하면 탭 줄의 위치까지 위아래로 움직인다. 그러면
+// 탭을 연달아 누를 때 마우스를 매번 다시 찾아야 한다.
+// 90vh 는 큰 화면에서 지나치게 커서 짧은 탭이 텅 비어 보이므로 780px 로 제한한다.
+const MODAL_CLS =
+  "relative w-full max-w-5xl h-[min(90vh,780px)] flex flex-col rounded-2xl " +
+  // 반투명이면 뒷화면이 섞여 흐려진다 → 불투명
+  "bg-zinc-900 border border-white/15 " +
+  "shadow-2xl shadow-black/80 overflow-hidden";
+
 const inputCls =
-  "w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-500";
-const selectCls = inputCls + " pr-8";
+  "w-full rounded-lg border border-white/20 bg-zinc-950 px-3 py-2 text-sm text-white " +
+  "placeholder:text-white/35 transition-colors " +
+  "hover:border-white/30 " +
+  "focus:outline-none focus:border-amber-100/70 focus:ring-2 focus:ring-amber-100/20";
+// 셀렉트의 옵션 목록은 OS 가 그리므로 어두운 글자색을 따로 지정해야 읽힌다
+const selectCls = inputCls + " pr-8 [&>option]:text-zinc-900";
 
 function Section({
   title,
@@ -943,9 +1023,9 @@ function Section({
   return (
     <div>
       <div className="flex items-center gap-2 mb-3">
-        <h3 className="text-sm font-bold text-zinc-900">{title}</h3>
+        <h3 className="text-sm font-bold text-white">{title}</h3>
         {required && (
-          <span className="text-[10px] text-red-600 bg-red-50 rounded px-1.5 py-0.5 font-semibold">
+          <span className="text-[10px] text-amber-200 bg-amber-100/10 border border-amber-100/20 rounded px-1.5 py-0.5 font-semibold">
             필수
           </span>
         )}
@@ -979,9 +1059,9 @@ function Row({
 }) {
   return (
     <label className={`block ${fullWidth ? "sm:col-span-2" : ""}`}>
-      <div className="text-xs font-medium text-zinc-700 mb-1">{label}</div>
+      <div className="text-xs font-medium text-white/70 mb-1.5">{label}</div>
       {children}
-      {hint && <div className="mt-1 text-[11px] text-zinc-400">{hint}</div>}
+      {hint && <div className="mt-1 text-[11px] text-white/35">{hint}</div>}
     </label>
   );
 }
@@ -1034,7 +1114,7 @@ function ProfilePhotoSlot({
     : "";
 
   return (
-    <div className="relative aspect-square rounded-lg border border-zinc-300 bg-zinc-50 overflow-hidden group">
+    <div className="relative aspect-square rounded-lg border border-white/20 bg-zinc-950 overflow-hidden group">
       <input
         ref={inputRef}
         type="file"
@@ -1076,7 +1156,7 @@ function ProfilePhotoSlot({
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={uploading}
-          className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors"
+          className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-white/35 hover:text-amber-100 hover:bg-white/[0.06] transition-colors"
         >
           {uploading ? (
             <span className="text-xs">업로드중…</span>
@@ -1124,8 +1204,8 @@ function ChipMultiSelect({
             className={
               "px-2.5 py-1 rounded-full text-xs font-medium border transition-colors " +
               (active
-                ? "bg-zinc-900 text-white border-zinc-900 hover:bg-zinc-800"
-                : "bg-white text-zinc-700 border-zinc-300 hover:bg-zinc-50")
+                ? "bg-amber-100 text-zinc-900 border-amber-100 font-medium"
+                : "bg-white/[0.06] text-white/70 border-white/15 hover:bg-white/10 hover:text-white")
             }
           >
             {o.label}

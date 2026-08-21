@@ -129,16 +129,60 @@ async def get_media_rag_scenes(
     return {"talent_media_id": media_id, "count": len(scenes), "scenes": scenes}
 
 
+# 관리자 목록의 나이대 필터.
+# 나이를 SQL 에서 계산하면(age(birth_date)) 인덱스를 못 타므로,
+# "나이 범위" 를 "생년월일 범위" 로 바꿔서 비교한다.
+_AGE_BANDS = {
+    "under_10": (None, 10),   # 10세 미만
+    "10s": (10, 20),
+    "20s": (20, 30),
+    "30s": (30, 40),
+    "40s": (40, 50),
+    "50s": (50, 60),
+    "60s": (60, 70),
+    "70s_plus": (70, None),   # 70세 이상
+}
+
+
+def _years_ago(base: date, years: int) -> date:
+    """base 에서 years 년 전 날짜. 2월 29일은 28일로 내린다."""
+    try:
+        return base.replace(year=base.year - years)
+    except ValueError:
+        return base.replace(year=base.year - years, day=28)
+
+
+def _age_band_condition(band: str):
+    """나이대 코드 → birth_date 조건 목록 (알 수 없는 코드면 빈 목록)."""
+    lo, hi = _AGE_BANDS.get(band, (None, None))
+    if lo is None and hi is None:
+        return []
+    today = date.today()
+    conds = []
+    # 나이 >= lo  ⇔  생일이 lo 년 전보다 이르거나 같다
+    if lo is not None:
+        conds.append(TalentMaster.birth_date <= _years_ago(today, lo))
+    # 나이 < hi   ⇔  생일이 hi 년 전보다 늦다
+    if hi is not None:
+        conds.append(TalentMaster.birth_date > _years_ago(today, hi))
+    return conds
+
+
 @admin_router.get("/talents")
 async def list_talents(
     q: str | None = Query(default=None, description="이름 또는 예명 부분검색"),
     gender: str | None = Query(default=None, description="성별 필터. MALE / FEMALE"),
+    age_band: str | None = Query(
+        default=None,
+        description="나이대. under_10 / 10s / 20s / 30s / 40s / 50s / 60s / 70s_plus",
+    ),
+    main_category: str | None = Query(default=None, description="주 분야. ACTOR / MODEL 등"),
     page: int = Query(default=1, ge=1, description="1부터 시작"),
     size: int = Query(default=20, ge=1, le=100, description="페이지당 건수"),
     current=Depends(get_current_account),
     db: AsyncSession = Depends(get_db),
 ):
-    """등록된 talent_master 목록 (관리자). 이름·성별 검색 + 페이지네이션."""
+    """등록된 talent_master 목록 (관리자). 이름·성별·나이대·분야 검색 + 페이지네이션."""
     account, _admin = current
     if account.account_type != "ADMIN":
         raise HTTPException(status_code=403, detail="ADMIN_ONLY")
@@ -152,6 +196,10 @@ async def list_talents(
         )
     if gender in ("MALE", "FEMALE"):
         conds.append(TalentMaster.gender == gender)
+    if age_band:
+        conds.extend(_age_band_condition(age_band))
+    if main_category and main_category.strip():
+        conds.append(TalentMaster.main_category == main_category.strip())
 
     # 전체 건수는 페이지와 무관하게 조건만 적용해 센다
     total = (

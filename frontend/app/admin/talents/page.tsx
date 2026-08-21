@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ChangeEvent } from "react";
 import { AlertTriangle, Loader2, Search, Trash2, UserPlus, Users } from "lucide-react";
 
 import DashboardHeader from "@/components/DashboardHeader";
@@ -52,6 +52,31 @@ function completionColor(rate: number | null): string {
 // 헤더·데이터 모두 가로 중앙정렬
 // 12명을 넘으면 페이지네이션이 나타난다 (totalPages > 1 일 때만 표시)
 const PAGE_SIZE = 12;
+// 나이대 — 값은 백엔드 _AGE_BANDS 와 같아야 한다
+const AGE_BANDS = [
+  { value: "under_10", label: "10세 미만" },
+  { value: "10s", label: "10대" },
+  { value: "20s", label: "20대" },
+  { value: "30s", label: "30대" },
+  { value: "40s", label: "40대" },
+  { value: "50s", label: "50대" },
+  { value: "60s", label: "60대" },
+  { value: "70s_plus", label: "70대 이상" },
+];
+
+const CATEGORIES = [
+  { value: "ACTOR", label: "연기자" },
+  { value: "MODEL", label: "모델" },
+  { value: "SINGER", label: "가수" },
+  { value: "MC", label: "MC" },
+  { value: "INFLUENCER", label: "인플루언서" },
+  { value: "OTHER", label: "기타" },
+];
+
+// 이름 입력은 타이핑이 멈춘 뒤에 조회한다.
+// 글자마다 요청을 보내면 낭비가 크고, 응답이 뒤늦게 도착해 순서가 뒤바뀌기도 한다.
+const SEARCH_DEBOUNCE_MS = 300;
+
 const TH = "px-3 py-2 text-center font-semibold text-white/70 whitespace-nowrap";
 const TD = "px-3 py-2 text-center text-white/90 whitespace-nowrap";
 
@@ -65,10 +90,12 @@ export default function AdminTalentsPage() {
   const [deleteTarget, setDeleteTarget] = useState<TalentRow | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  // 검색 입력값 — 검색 버튼을 눌러야 applied 로 넘어가 조회에 반영된다
+  // 검색 조건 — 셀렉트는 고르는 즉시, 이름은 타이핑이 멈춘 뒤 조회에 반영된다
   const [q, setQ] = useState("");
+  const [debouncedQ, setDebouncedQ] = useState("");
   const [gender, setGender] = useState("");
-  const [applied, setApplied] = useState({ q: "", gender: "" });
+  const [ageBand, setAgeBand] = useState("");
+  const [category, setCategory] = useState("");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -83,8 +110,10 @@ export default function AdminTalentsPage() {
         total_pages: number;
       }>("/admin/talents", {
         params: {
-          q: applied.q || undefined,
-          gender: applied.gender || undefined,
+          q: debouncedQ || undefined,
+          gender: gender || undefined,
+          age_band: ageBand || undefined,
+          main_category: category || undefined,
           page,
           size: PAGE_SIZE,
         },
@@ -100,19 +129,36 @@ export default function AdminTalentsPage() {
     } finally {
       setLoading(false);
     }
-  }, [applied, page]);
+  }, [debouncedQ, gender, ageBand, category, page]);
 
-  // 검색은 항상 1페이지부터
-  const runSearch = useCallback(() => {
-    setPage(1);
-    setApplied({ q: q.trim(), gender });
-  }, [q, gender]);
+  // 이름 입력 디바운스. 페이지 리셋도 여기서 함께 한다 —
+  // effect 본문에서 setState 하면 렌더가 연쇄되므로 타이머 콜백 안에서 처리한다.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedQ(q.trim());
+      setPage(1);
+    }, SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(t);
+  }, [q]);
+
+  // 셀렉트는 고른 즉시 조회한다. 조건이 바뀌면 1페이지로 돌아가야 한다 —
+  // 3페이지를 보던 중 조건을 좁히면 결과가 1페이지뿐이라 빈 화면이 되기 때문이다.
+  const changeFilter = useCallback(
+    (setter: (v: string) => void) => (e: ChangeEvent<HTMLSelectElement>) => {
+      setter(e.target.value);
+      setPage(1);
+    },
+    [],
+  );
+
+  const hasFilter = Boolean(q || gender || ageBand || category);
 
   const resetSearch = useCallback(() => {
     setQ("");
     setGender("");
+    setAgeBand("");
+    setCategory("");
     setPage(1);
-    setApplied({ q: "", gender: "" });
   }, []);
 
   // 아티스트 등록: 이름만 받아 생성 → 곧바로 프로필 편집 모달 오픈
@@ -161,7 +207,8 @@ export default function AdminTalentsPage() {
         sizes="100vw"
         className="object-cover -z-10"
       />
-      <div className="absolute inset-0 bg-black/55 -z-10" />
+      {/* 표 위에 배경 무늬가 비쳐 읽기 어려웠다 — 더 어둡게 덮는다 */}
+      <div className="absolute inset-0 bg-black/80 -z-10" />
 
       <DashboardHeader variant="dark" menu="public" />
 
@@ -186,34 +233,52 @@ export default function AdminTalentsPage() {
           </button>
         </div>
 
-        {/* 검색 — 이름(예명 포함) · 성별 */}
-        <div className="mb-4 flex flex-wrap gap-2">
-          <input
-            type="text"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && runSearch()}
-            placeholder="이름 또는 예명"
-            className="w-56 rounded-lg border border-white/20 bg-white/10 backdrop-blur-md px-3 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:border-white/40"
-          />
+        {/* 검색 — 고르는 즉시 반영된다 (검색 버튼 없음) */}
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+            <input
+              type="text"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="이름 또는 예명"
+              className="w-56 rounded-lg border border-white/20 bg-white/10 backdrop-blur-md pl-9 pr-3 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:border-white/40"
+            />
+          </div>
           <select
             value={gender}
-            onChange={(e) => setGender(e.target.value)}
+            onChange={changeFilter(setGender)}
             className="rounded-lg border border-white/20 bg-white/10 backdrop-blur-md px-3 py-2 text-sm text-white focus:outline-none focus:border-white/40 [&>option]:text-zinc-900"
           >
             <option value="">성별 전체</option>
             <option value="FEMALE">여</option>
             <option value="MALE">남</option>
           </select>
-          <button
-            type="button"
-            onClick={runSearch}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-amber-100 text-zinc-900 px-4 py-2 text-sm font-semibold hover:bg-amber-200 transition-colors"
+          <select
+            value={ageBand}
+            onChange={changeFilter(setAgeBand)}
+            className="rounded-lg border border-white/20 bg-white/10 backdrop-blur-md px-3 py-2 text-sm text-white focus:outline-none focus:border-white/40 [&>option]:text-zinc-900"
           >
-            <Search className="w-4 h-4" />
-            검색
-          </button>
-          {(applied.q || applied.gender) && (
+            <option value="">나이 전체</option>
+            {AGE_BANDS.map((b) => (
+              <option key={b.value} value={b.value}>
+                {b.label}
+              </option>
+            ))}
+          </select>
+          <select
+            value={category}
+            onChange={changeFilter(setCategory)}
+            className="rounded-lg border border-white/20 bg-white/10 backdrop-blur-md px-3 py-2 text-sm text-white focus:outline-none focus:border-white/40 [&>option]:text-zinc-900"
+          >
+            <option value="">분야 전체</option>
+            {CATEGORIES.map((c) => (
+              <option key={c.value} value={c.value}>
+                {c.label}
+              </option>
+            ))}
+          </select>
+          {hasFilter && (
             <button
               type="button"
               onClick={resetSearch}
@@ -221,6 +286,10 @@ export default function AdminTalentsPage() {
             >
               초기화
             </button>
+          )}
+          {/* 조회 중 표시 — 버튼이 없으니 무언가 진행 중임을 여기서 알린다 */}
+          {loading && items.length > 0 && (
+            <Loader2 className="w-4 h-4 animate-spin text-white/50" />
           )}
         </div>
 
@@ -237,7 +306,7 @@ export default function AdminTalentsPage() {
           </div>
         ) : items.length === 0 ? (
           <div className="rounded-xl border border-white/15 bg-white/5 backdrop-blur-md p-10 text-center text-white/70">
-            {applied.q || applied.gender
+            {hasFilter
               ? "검색 결과가 없습니다."
               : "등록된 아티스트가 없습니다."}
           </div>
