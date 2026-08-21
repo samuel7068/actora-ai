@@ -413,6 +413,7 @@ def analyze_scene_with_gpt(
     audio_features: dict[str, Any] | None,
     openai_api_key: str,
     main_category: str | None = None,
+    source_filename: str | None = None,
 ) -> dict[str, Any]:
     """GPT-4 Vision 으로 scene JSON 산출 (단계 6).
 
@@ -452,6 +453,21 @@ def analyze_scene_with_gpt(
     )
 
     content: list[dict[str, Any]] = [{"type": "text", "text": user_prompt}]
+
+    # 영상 파일명은 사건 판정에 강한 힌트다.
+    # GPT 는 320px 썸네일 **한 장**만 보므로 화보 촬영의 포즈(어깨를 감싸 쥠 등)를
+    # 부상으로 오해하기 쉽다. 실제로 "소니 코리아 촬영.MP4" 의 한 컷이 '부상' 으로
+    # 분석되어 다친 연기 검색에 광고 배우가 올라왔다.
+    # 파일명 한 줄만 줘도 그 컷이 광고·화보라는 것을 알 수 있다.
+    if source_filename and source_filename.strip():
+        content.append({"type": "text", "text": (
+            f"[영상 파일명] {source_filename.strip()}\n"
+            "파일명은 이 영상의 성격을 알려 주는 힌트입니다. 촬영·광고·화보·모델·홍보·"
+            "포트폴리오 같은 낱말이 보이면 광고나 화보 촬영물일 가능성이 높으니, "
+            "사건(부상·죽음·폭행)을 단정하지 말고 촬영 상황으로 보세요. "
+            "다만 힌트일 뿐이므로, 화면에 사건이 분명히 보이면 화면을 따르세요."
+        )})
+
     if keyframe and keyframe.get("thumbnail_data_uri"):
         content.append({
             "type": "image_url",

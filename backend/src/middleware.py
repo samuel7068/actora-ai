@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import logging
 import time
+from urllib.parse import unquote_plus
 import uuid
 
 from starlette.datastructures import MutableHeaders
@@ -27,6 +28,34 @@ SKIP_PATHS = frozenset({"/health", "/auth/heartbeat"})
 
 # 이 시간을 넘으면 WARNING 으로 올려 느린 요청을 눈에 띄게 한다
 SLOW_REQUEST_MS = 3000
+
+# 쿼리스트링이 이보다 길면 잘라 붙인다 (로그 한 줄이 화면을 넘기지 않게)
+MAX_QUERY_LEN = 200
+
+
+def _path_with_query(scope) -> str:
+    """경로 + 쿼리스트링.
+
+    경로만 남기면 "GET /agency/search → 200" 처럼 **무엇을 요청했는지 알 수 없어**
+    문제를 재현할 수 없다. 검색어·필터가 쿼리에 담기므로 함께 남긴다.
+    값 자체의 마스킹(token=, api_key= 등)은 SecretMaskFilter 가 출력 직전에 처리한다.
+    """
+    path = scope.get("path", "")
+    raw = scope.get("query_string") or b""
+    if not raw:
+        return path
+    q = raw.decode("utf-8", "replace")
+    # 퍼센트 인코딩을 풀어야 한글 검색어를 그대로 읽을 수 있다
+    # ("q=%EB%8B%A4%EC%B9%9C" 보다 "q=다친 연기" 가 추적에 쓸모 있다)
+    try:
+        q = unquote_plus(q)
+    except Exception:
+        pass
+    # 개행·제어문자가 섞이면 로그 한 줄이 깨지므로 공백으로 바꾼다
+    q = "".join(" " if ord(c) < 32 else c for c in q)
+    if len(q) > MAX_QUERY_LEN:
+        q = q[:MAX_QUERY_LEN] + "…"
+    return f"{path}?{q}"
 
 
 class RequestContextMiddleware:
@@ -60,13 +89,15 @@ class RequestContextMiddleware:
         except Exception:
             elapsed = (time.perf_counter() - started) * 1000
             # 여기서 로그를 남기지 않으면 어느 요청이 터졌는지 알 수 없다
-            logger.exception(f"{method} {path} → 처리 중 예외 ({elapsed:.0f}ms)")
+            logger.exception(
+                f"{method} {_path_with_query(scope)} → 처리 중 예외 ({elapsed:.0f}ms)"
+            )
             raise
         else:
             if path not in SKIP_PATHS:
                 elapsed = (time.perf_counter() - started) * 1000
                 code = status["code"]
-                message = f"{method} {path} → {code} ({elapsed:.0f}ms)"
+                message = f"{method} {_path_with_query(scope)} → {code} ({elapsed:.0f}ms)"
                 if code >= 500:
                     logger.error(message)
                 elif code >= 400:

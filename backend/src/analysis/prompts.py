@@ -17,6 +17,7 @@ from __future__ import annotations
 import logging
 import tomllib
 from pathlib import Path
+from threading import Lock
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +26,21 @@ _PROMPTS_DIR = Path(__file__).resolve().parent.parent.parent / "prompts"
 
 # 파일별 캐시: filename → (mtime, dict)
 _cache: dict[str, tuple[float, dict]] = {}
+# 캐시 채우기를 직렬화한다.
+# 장면 분석은 동시에 5개가 돌아서(SCENE_CONCURRENCY), 락이 없으면 다섯 스레드가
+# 캐시가 비어 있는 것을 동시에 보고 각자 파일을 읽는다. 그러면 같은 로그가 5줄
+# 찍히고 파싱도 5번 한다. 실제 로그에서 그렇게 나타났다.
+_lock = Lock()
+
+
+def _version_of(data: dict) -> str:
+    """로그에 남길 버전. 섹션에 적힌 version 을 모아 준다 (mtime 숫자보다 쓸모 있다)."""
+    vs = [
+        str(v["version"])
+        for v in data.values()
+        if isinstance(v, dict) and v.get("version")
+    ]
+    return ", ".join(dict.fromkeys(vs)) if vs else "-"
 
 
 def _load_file(filename: str) -> dict:
@@ -34,11 +50,17 @@ def _load_file(filename: str) -> dict:
     cached = _cache.get(filename)
     if cached and cached[0] == mtime:
         return cached[1]
-    with path.open("rb") as f:
-        data = tomllib.load(f)
-    _cache[filename] = (mtime, data)
-    logger.info(f"loaded prompts from {filename} (mtime={mtime})")
-    return data
+
+    with _lock:
+        # 락을 기다리는 동안 다른 스레드가 이미 채웠을 수 있다
+        cached = _cache.get(filename)
+        if cached and cached[0] == mtime:
+            return cached[1]
+        with path.open("rb") as f:
+            data = tomllib.load(f)
+        _cache[filename] = (mtime, data)
+        logger.info(f"프롬프트 로드: {filename} (version={_version_of(data)})")
+        return data
 
 
 def get_prompt(name: str, *, file: str) -> dict:

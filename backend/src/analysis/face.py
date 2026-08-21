@@ -14,7 +14,10 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import io
 import logging
+import warnings
+from contextlib import redirect_stdout
 import os
 import threading
 from pathlib import Path
@@ -24,6 +27,15 @@ import cv2
 import numpy as np
 
 logger = logging.getLogger(__name__)
+
+# insightface 내부가 scikit-image 의 deprecated API 를 써서 분석마다 같은
+# FutureWarning 을 쏟는다. 우리 코드로는 고칠 수 없고 매번 반복되어 로그만 어지럽힌다.
+# (라이브러리가 올라가면 이 억제를 지워도 된다)
+warnings.filterwarnings(
+    "ignore",
+    message=r".*`estimate` is deprecated.*",
+    category=FutureWarning,
+)
 
 MODEL_NAME = "buffalo_l"
 EMBEDDING_DIM = 512
@@ -60,16 +72,26 @@ def get_face_app():
         if _app is None:
             from insightface.app import FaceAnalysis
 
-            app = FaceAnalysis(
-                name=MODEL_NAME,
-                root=MODEL_ROOT,
-                providers=["CPUExecutionProvider"],
-                # 검출 + 인식만 사용 (landmark/genderage 는 불필요 → 로딩·추론 절약)
-                allowed_modules=["detection", "recognition"],
-            )
-            app.prepare(ctx_id=-1, det_size=(640, 640))
+            # InsightFace·onnxruntime 은 초기화 정보를 logging 이 아니라 print 로
+            # 쏟아낸다 ("Applied providers: ...", "find model: ...", "set det-size").
+            # 그대로 두면 시각·req·acc 가 없는 줄이 로그 형식을 깨뜨리고, 정작 필요한
+            # 정보는 아래 한 줄로 충분하다. 그래서 stdout 을 잠시 삼킨다.
+            buf = io.StringIO()
+            with redirect_stdout(buf):
+                app = FaceAnalysis(
+                    name=MODEL_NAME,
+                    root=MODEL_ROOT,
+                    providers=["CPUExecutionProvider"],
+                    # 검출 + 인식만 사용 (landmark/genderage 는 불필요 → 로딩·추론 절약)
+                    allowed_modules=["detection", "recognition"],
+                )
+                app.prepare(ctx_id=-1, det_size=(640, 640))
             _app = app
-            logger.info(f"InsightFace ready: {MODEL_NAME}")
+            logger.info(f"InsightFace ready: {MODEL_NAME} (det_size=640)")
+            # 삼킨 내용은 문제 추적용으로 DEBUG 에만 남긴다
+            swallowed = buf.getvalue().strip()
+            if swallowed:
+                logger.debug(f"InsightFace 초기화 출력:\n{swallowed}")
     return _app
 
 

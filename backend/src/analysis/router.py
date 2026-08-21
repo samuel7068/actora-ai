@@ -753,6 +753,8 @@ async def _analyze(
                                 audio_features=audio_features_by_scene.get(sc["scene_id"]),
                                 openai_api_key=config.OPENAI_API_KEY,
                                 main_category=talent.main_category,
+                                # 파일명은 광고·화보인지 드라마인지 알려주는 힌트
+                                source_filename=filename,
                             )
                         except Exception as e:
                             errors.append(f"{sc['scene_id']}: {type(e).__name__}: {e}")

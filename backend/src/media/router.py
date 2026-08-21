@@ -273,7 +273,9 @@ async def get_media(
         filename=row.original_file_name or row.stored_file_name or "",
     )
     if signed:
-        logger.info(f"media {media_id} → 서명 URL 발급 (key={row.media_path})")
+        # 요청 완료 로그(GET /media/33 → 307)와 짝이 되어 같은 사건이 2줄이 된다.
+        # 키가 필요한 경우는 문제 추적이므로 DEBUG 로 내린다.
+        logger.debug(f"media {media_id} → 서명 URL 발급 (key={row.media_path})")
         # 서명이 만료된 뒤 캐시된 302 가 재사용되면 재생이 깨진다
         return RedirectResponse(
             signed, status_code=307, headers={"Cache-Control": "no-store"}

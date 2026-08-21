@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.account.models import AccountMaster
-from src.analysis.rag_index import search_scenes
+from src.analysis.rag_index import search_scenes_by_talent
 from src.agency.query_parse import parse_search_query
 from src.auth.deps import get_current_account
 from src.config import get_settings
@@ -294,11 +294,16 @@ async def search_talents(
     if search_text != q:
         logger.info(f"검색 문장 확장: {q!r} → {search_text!r}")
 
-    # scene 단위라 한 인재가 여러 건 나올 수 있으므로 넉넉히 받아 dedup 후 trim.
+    # 아티스트별로 고르게 받아 온다.
+    # 그냥 상위 N 개를 받으면 장면이 많은 아티스트가 후보를 독점한다 —
+    # "불안" 검색에서 상위 40개 중 27개가 한 사람의 장면이었고, 다른 아티스트는
+    # 후보에조차 들지 못했다. 장면 수가 많다고 더 적합한 것은 아니다.
+    # 아티스트마다 상위 3개씩 받아, 감정 조건에 걸러져도 다른 장면에 기회를 남긴다.
     try:
-        raw = await search_scenes(
+        raw = await search_scenes_by_talent(
             search_text,
-            limit=limit * 5,
+            talent_limit=max(limit * 3, 30),
+            scenes_per_talent=8,
             openai_api_key=config.OPENAI_API_KEY,
             query_filter=qfilter,
         )
@@ -309,32 +314,53 @@ async def search_talents(
             status_code=503, detail=f"SEARCH_BACKEND_ERROR:{type(e).__name__}"
         ) from e
 
-    # ── 인재(account) 단위 중복 제거 — 같은 인재의 여러 scene 중 최고 점수 1건만 ──
-    # raw 는 유사도 내림차순이므로 먼저 만난 account 가 그 인재의 최고 점수 scene.
-    seen: set[int] = set()
-    deduped: list[dict] = []
-    dropped_low_score = 0
+    # 질의에서 뽑은 감정 (드롭다운으로 직접 고른 것도 합친다)
+    target_emotions = set(cond.get("emotions") or [])
+    if emotion:
+        target_emotions.add(emotion)
+
+    # ── 아티스트 단위로 **가장 적합한 장면 1개**만 남긴다 ──
+    # 단순히 최고점 장면을 쓰면 안 된다. 장면이 많은 아티스트는 질의와 무관한 장면이
+    # 최고점을 차지하기 쉽다 — 김채은은 '평온' 장면이 33개라 "불안" 질의에서도
+    # 상위가 전부 평온으로 채워졌고, 정작 갖고 있는 '불안' 장면 2개는 묻혀서
+    # 감정 감점을 맞고 탈락했다.
+    # 그래서 질의에 감정이 있으면 **그 감정이 담긴 장면을 우선** 고른다.
+    by_talent: dict[int, list[dict]] = {}
     for r in raw:
         aid = _to_int((r.get("payload") or {}).get("account_id"))
-        if aid is None or aid in seen:
+        if aid is None:
             continue
-
-        # 감정을 직접 고른 경우, 그 감정이 없는 장면은 건너뛴다.
-        # seen 에 넣지 않는 이유: 같은 인재의 **다른 장면** 이 그 감정을 담고 있을 수
-        # 있으므로 기회를 남겨 둔다 (최고점 장면이 감정 불일치일 수 있다).
+        # 감정을 드롭다운으로 직접 고른 경우는 그 감정이 없는 장면을 아예 배제한다
         if emotion and emotion not in _scene_emotions(r.get("payload") or {}):
             continue
+        by_talent.setdefault(aid, []).append(r)
 
-        seen.add(aid)
-        # raw 는 내림차순이라 이 scene 이 그 인재의 최고점.
-        # 최고점이 임계값 미달이면 캐스팅 후보로 쓸 수 없어 제외한다.
-        if float(r.get("score") or 0.0) < MIN_SCORE:
+    def pick_best(cands: list[dict]) -> dict:
+        """한 아티스트의 후보 장면 중 질의에 가장 맞는 것."""
+        if target_emotions:
+            matched = [
+                c for c in cands
+                if _scene_emotions(c.get("payload") or {}) & target_emotions
+            ]
+            if matched:
+                # 감정이 맞는 장면 중 최고점 (주 감정이면 더 앞세운다)
+                return max(matched, key=lambda c: (
+                    (c.get("payload") or {}).get("primary_emotion") in target_emotions,
+                    float(c.get("score") or 0.0),
+                ))
+        return max(cands, key=lambda c: float(c.get("score") or 0.0))
+
+    deduped: list[dict] = []
+    dropped_low_score = 0
+    for aid, cands in by_talent.items():
+        best = pick_best(cands)
+        # 임계값 미달이면 캐스팅 후보로 쓸 수 없어 제외한다
+        if float(best.get("score") or 0.0) < MIN_SCORE:
             dropped_low_score += 1
             continue
-        deduped.append(r)
-        if len(deduped) >= limit:
-            break
-    raw = deduped
+        deduped.append(best)
+    deduped.sort(key=lambda x: float(x.get("score") or 0.0), reverse=True)
+    raw = deduped[:limit]
 
     # ── 감정 일치 재순위 ──
     # 임베딩은 감정의 *종류* 보다 *표현 방식* 에 강하게 반응한다.
@@ -343,10 +369,6 @@ async def search_talents(
     # 보너스를 더한 rank_score 를 화면의 "적합도" 로 그대로 내려보낸다.
     # (예전에는 score 를 보여주고 rank_score 로만 정렬해, 화면의 숫자가
     #  47.4% → 39.0% → 47.5% 처럼 뒤죽박죽으로 보였다)
-    target_emotions = set(cond.get("emotions") or [])
-    if emotion:
-        target_emotions.add(emotion)
-
     for r in raw:
         payload = r.get("payload") or {}
         matched = sorted(_scene_emotions(payload) & target_emotions)

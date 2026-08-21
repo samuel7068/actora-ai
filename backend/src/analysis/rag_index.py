@@ -275,6 +275,55 @@ async def search_scenes(
     return [{"score": pt.score, "payload": pt.payload} for pt in res.points]
 
 
+async def search_scenes_by_talent(
+    query: str,
+    *,
+    talent_limit: int,
+    scenes_per_talent: int = 3,
+    openai_api_key: str,
+    query_filter: "models.Filter | None" = None,
+    score_threshold: float | None = None,
+) -> list[dict[str, Any]]:
+    """**아티스트별로 고르게** 유사 scene 을 검색 (에이전시 검색용).
+
+    왜 그냥 상위 N 개를 쓰지 않는가:
+    scene 단위로 검색하면 장면이 많은 아티스트가 상위를 독점한다.
+    실측 — "불안" 검색에서 상위 40개 중 27개가 한 아티스트(김하율)의 장면이었고,
+    그 결과 김채은(72위)·배종옥(43위)·김태우(62위)는 후보에조차 들지 못했다.
+    장면 수가 많다는 것이 더 적합하다는 뜻은 아니므로, Qdrant 의 그룹 검색으로
+    **아티스트마다 최고점 장면 몇 개씩**을 가져온다.
+
+    scenes_per_talent 를 1 보다 크게 두는 이유: 최고점 장면이 감정 조건에 안 맞을 때
+    같은 아티스트의 다른 장면에 기회를 남기기 위함 (호출부가 그 중에서 고른다).
+
+    반환: [{score, payload}] — 유사도 내림차순으로 평탄화.
+    """
+    if not query.strip():
+        return []
+    if not openai_api_key:
+        raise RuntimeError("OPENAI_API_KEY_MISSING")
+    client = get_qdrant_client()
+    if not await client.collection_exists(COLLECTION):
+        return []
+    vector = (await asyncio.to_thread(_embed_texts, [query], openai_api_key))[0]
+    res = await client.query_points_groups(
+        collection_name=COLLECTION,
+        query=vector,
+        group_by="account_id",
+        limit=talent_limit,
+        group_size=max(1, scenes_per_talent),
+        with_payload=True,
+        query_filter=query_filter,
+        score_threshold=score_threshold,
+    )
+    out: list[dict[str, Any]] = []
+    for g in res.groups:
+        for pt in g.hits:
+            out.append({"score": pt.score, "payload": pt.payload})
+    out.sort(key=lambda x: x["score"], reverse=True)
+    return out
+
+
 async def delete_media_points(talent_media_id: int) -> None:
     """해당 영상의 모든 scene 포인트를 talent_media_id 필터로 삭제 (best-effort)."""
     client = get_qdrant_client()

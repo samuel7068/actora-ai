@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { Loader2, Play, Search, Sparkles } from "lucide-react";
+import { AlertTriangle, Loader2, Play, Search, Sparkles } from "lucide-react";
 
 import DashboardHeader from "@/components/DashboardHeader";
 import LoginModal from "@/components/LoginModal";
@@ -404,6 +404,14 @@ export default function TalentSearchView() {
             <span className="text-xs text-white/50">
               영상에서 연기·연출된 모습 — 실제 나이와 달라도 됩니다
             </span>
+            {/* 짧은 단어는 임베딩이 특정성을 갖지 못해 엉뚱한 장면과도 비슷해진다.
+                실측: "다친 연기" 는 부상 장면을 하나도 못 찾았지만,
+                "다치고 부상당한 사람을 연기하는 장면" 은 상위를 전부 부상 장면으로 채웠다.
+                검색 품질을 좌우하는 안내라 눈에 띄게 둔다. */}
+            <span className="inline-flex items-center gap-1 rounded-md border border-red-400/40 bg-red-500/15 px-2 py-0.5 text-[11px] font-semibold text-red-300">
+              <AlertTriangle className="w-3 h-3 shrink-0" />
+              짧은 단어보다 <span className="text-red-200">문장</span>으로 입력하면 훨씬 정확합니다
+            </span>
           </div>
           {/* 조건 select 과 검색어를 한 줄에 — 좁은 화면에서는 자연스럽게 줄바꿈된다 */}
           <div className="flex flex-wrap items-center gap-2">
@@ -424,7 +432,7 @@ export default function TalentSearchView() {
               value={q}
               onChange={(e) => setQ(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && runSearch(q)}
-              placeholder="예: 울음을 참으며 눌러 담는 감정 연기"
+              placeholder="문장으로 입력 — 예: 울음을 참으며 눌러 담는 감정 연기"
               className={`flex-1 min-w-[18rem] ${FIELD_CLS} placeholder-white/35`}
             />
             <button
