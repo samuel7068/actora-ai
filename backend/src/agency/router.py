@@ -282,12 +282,22 @@ async def search_talents(
         )
     qfilter = models.Filter(must=must)
 
-    # 벡터 검색은 검색 문장 전체로. (의미 단어만 떼면 "수다스런" 같은 단어는 임베딩이
-    #  빈약해져 유사도가 불안정 — 전체 문장이 맥락이 풍부해 더 안정적.)
+    # ── 벡터 검색에 넣을 문장 ──
+    # 검색 대상(scene 임베딩)은 길고 서술적인 문장이다. 그래서 "다친 연기" 처럼
+    # 두세 단어만 들어오면 어떤 장면과도 어정쩡하게 비슷해져(전부 35~40%) 순위가
+    # 뒤섞인다. 실측: "다친 연기" 는 부상 장면을 상위 12건에 하나도 못 올렸지만,
+    # "다치고 부상당한 사람을 연기하는 장면" 은 12건 전부를 부상 장면으로 채웠다.
+    #
+    # 그래서 파서가 질의를 같은 뜻의 장면 묘사로 풀어 준 search_text 를 우선 쓴다.
+    # (의미 표현이 없는 질의 — "20대 여성" — 는 빈 문자열이므로 원문으로 되돌린다)
+    search_text = (cond.get("search_text") or "").strip() or q
+    if search_text != q:
+        logger.info(f"검색 문장 확장: {q!r} → {search_text!r}")
+
     # scene 단위라 한 인재가 여러 건 나올 수 있으므로 넉넉히 받아 dedup 후 trim.
     try:
         raw = await search_scenes(
-            q,
+            search_text,
             limit=limit * 5,
             openai_api_key=config.OPENAI_API_KEY,
             query_filter=qfilter,
@@ -431,6 +441,8 @@ async def search_talents(
         "explicit": explicit,
         "scene_filter": scene_filter,
         "query_emotions": sorted(target_emotions),
+        # 실제로 벡터 검색에 쓴 문장 (원문과 다르면 확장된 것)
+        "search_text": search_text,
         "min_score": MIN_SCORE,
         # 유사도가 낮아 제외된 인재 수 — 프론트에서 "왜 결과가 적은지" 안내에 쓴다
         "dropped_low_score": dropped_low_score,

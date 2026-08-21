@@ -9,24 +9,52 @@ type Props = {
   onClose: () => void;
   src: string | null;
   title?: string | null;
-  /** AI 분석 요약. 길어서 접어 두고 펼쳐 보게 한다 (title 에 넣으면 1줄로 잘린다) */
+  /** 먼저 보이는 분석. 검색 결과에서는 **검색어와 맞은 장면** 설명이 들어온다
+   *  (카드에서 읽은 글과 같아야 클릭 전후가 어긋나지 않는다) */
   summary?: string | null;
+  /** 펼쳤을 때 보여줄 **영상 전체 분석**. 없으면 펼치기 버튼이 나오지 않는다 */
+  fullSummary?: string | null;
 };
 
-/** 분석 요약 — 기본 3줄, 펼치면 스크롤. src 를 key 로 주어 영상이 바뀌면 접힌 상태로 초기화된다. */
-function SummaryBlock({ text }: { text: string }) {
+/**
+ * 분석 요약.
+ *
+ * 접힌 상태는 이 장면 설명, 펼치면 영상 전체 분석을 보여준다.
+ * 전에는 펼쳐도 같은 글의 나머지 줄만 나와서, "분석 내용 전체 보기" 라는 문구와
+ * 실제로 나오는 내용이 달랐다.
+ * src 를 key 로 주어 영상이 바뀌면 접힌 상태로 초기화된다.
+ */
+function SummaryBlock({ text, full }: { text: string; full?: string | null }) {
   const [expanded, setExpanded] = useState(false);
+  // 전체 분석이 이 글과 같으면 따로 보여줄 것이 없다
+  const hasFull = Boolean(full && full.trim() && full.trim() !== text.trim());
+
   return (
     <div className="mt-2">
+      {/* 접혀 있을 때는 3줄. 펼치면 전문을 스크롤로 본다
+          (프로필 화면처럼 전체 분석 하나만 넘어오는 경우도 다 읽혀야 한다) */}
       <p
         className={
           expanded
-            ? "text-sm leading-relaxed text-white/80 max-h-48 overflow-y-auto pr-1 select-text"
+            ? "text-sm leading-relaxed text-white/80 max-h-40 overflow-y-auto pr-1 select-text"
             : "text-sm leading-relaxed text-white/80 line-clamp-3 select-text"
         }
       >
         {text}
       </p>
+
+      {/* 검색 결과에서는 위가 '맞은 장면', 여기가 '영상 전체' 다 */}
+      {hasFull && expanded && (
+        <div className="mt-3 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2.5">
+          <div className="text-[11px] font-semibold text-amber-100/80">
+            이 영상 전체 분석
+          </div>
+          <p className="mt-1.5 text-sm leading-relaxed text-white/75 max-h-48 overflow-y-auto pr-1 select-text">
+            {full}
+          </p>
+        </div>
+      )}
+
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
@@ -38,7 +66,8 @@ function SummaryBlock({ text }: { text: string }) {
           </>
         ) : (
           <>
-            <ChevronDown className="w-3.5 h-3.5" /> 분석 내용 전체 보기
+            <ChevronDown className="w-3.5 h-3.5" />{" "}
+            {hasFull ? "이 영상 전체 분석 보기" : "분석 내용 전체 보기"}
           </>
         )}
       </button>
@@ -52,6 +81,7 @@ export default function VideoPlayerModal({
   src,
   title,
   summary,
+  fullSummary,
 }: Props) {
   // ESC 닫기
   useEffect(() => {
@@ -102,7 +132,9 @@ export default function VideoPlayerModal({
                     {title}
                   </div>
                 )}
-                {summary && <SummaryBlock key={src} text={summary} />}
+                {summary && (
+                  <SummaryBlock key={src} text={summary} full={fullSummary} />
+                )}
               </div>
             )}
           </motion.div>

@@ -2,7 +2,7 @@
 
 search_query_parse.toml 의 [query_parse] 프롬프트로 GPT 를 호출해
 {age_min, age_max, gender, height_min, height_max, weight_min, weight_max,
- skills, languages, emotions, semantic_query}
+ skills, languages, emotions, search_text}
 구조를 추출한다. 실패하면 빈 dict 반환(필터 없이 진행).
 """
 from __future__ import annotations
@@ -19,6 +19,8 @@ _INT_KEYS = (
     "age_min", "age_max", "height_min", "height_max", "weight_min", "weight_max",
 )
 _LIST_KEYS = ("skills", "languages", "emotions")
+# search_text: 벡터 검색에 넣을 장면 묘사 문장 (짧은 질의를 풀어 쓴 것)
+_STR_KEYS = ("search_text",)
 
 
 def _coerce(raw: dict[str, Any]) -> dict[str, Any]:
@@ -35,8 +37,11 @@ def _coerce(raw: dict[str, Any]) -> dict[str, Any]:
     for k in _LIST_KEYS:
         v = raw.get(k)
         out[k] = [str(x).strip() for x in v if str(x).strip()] if isinstance(v, list) else []
-    sq = raw.get("semantic_query")
-    out["semantic_query"] = sq.strip() if isinstance(sq, str) else ""
+    # 문자열 필드. _coerce 는 화이트리스트라, 여기에 적지 않은 키는
+    # GPT 가 채워 줘도 조용히 버려진다 (search_text 를 추가하며 실제로 겪었다).
+    for k in _STR_KEYS:
+        v = raw.get(k)
+        out[k] = v.strip() if isinstance(v, str) else ""
     return out
 
 

@@ -124,9 +124,11 @@ const findRange = (opts: RangeOption[], value: string) =>
   opts.find((o) => o.value === value) ?? null;
 
 // 유사도(0~1)에 따른 3구간 판정 — 적합(45%↑) / 보통(35~45%) / 부족(35%↓)
+// 등급 기준. 질의를 장면 묘사로 확장하면서 관련 있는 결과가 50~68% 로 올라왔으므로,
+// "적합" 문턱도 그에 맞춰 올렸다 (45% → 50%). 45~50% 구간은 "보통" 이 된다.
 function scoreTier(score: number): { label: string; color: string } {
   const pct = score * 100;
-  if (pct >= 45) return { label: "적합", color: "text-emerald-300" };
+  if (pct >= 50) return { label: "적합", color: "text-emerald-300" };
   if (pct >= 35) return { label: "보통", color: "text-amber-300" };
   return { label: "부족", color: "text-red-400" };
 }
@@ -177,7 +179,10 @@ export default function TalentSearchView() {
   const [player, setPlayer] = useState<{
     src: string;
     title: string | null;
+    /** 매칭된 장면 설명 (카드 본문과 같은 글) */
     summary: string | null;
+    /** 펼쳤을 때 보여줄 영상 전체 분석 */
+    fullSummary: string | null;
   } | null>(
     null,
   );
@@ -608,22 +613,25 @@ export default function TalentSearchView() {
                             ))}
                         </div>
                       </div>
-                      {/* 카드 본문 = 영상 전체 요약. 자르지 않고 전부 보여주되,
-                          500자가 넘어 카드 높이가 제각각이 되지 않도록 상한 안에서 스크롤한다.
-                          (대표 요약이 없는 구버전 분석 영상은 장면 요약으로 대체) */}
-                      {(r.media_summary || p.scene_summary) && (
+                      {/* 카드 본문 = **검색어와 맞은 장면**.
+                          검색은 scene 단위로 하므로(그게 영상 요약 단위보다 훨씬 정확하다),
+                          매칭 근거가 되는 장면을 앞에 두어야 "왜 이 결과가 나왔는지" 가
+                          바로 읽힌다. 전에는 영상 전체 요약을 앞에 두어, 카드에서 읽은 글과
+                          매칭 근거가 달라 결과가 엉뚱해 보였다.
+                          높이가 제각각이 되지 않도록 상한 안에서 스크롤한다. */}
+                      {(p.scene_summary || r.media_summary) && (
                         <p className="mt-2 max-h-44 overflow-y-auto pr-1 text-sm leading-relaxed text-white/85 select-text">
-                          {r.media_summary || p.scene_summary}
+                          {p.scene_summary || r.media_summary}
                         </p>
                       )}
-                      {/* 검색어와 맞은 장면은 따로 접어 둔다 — 왜 이 결과가 나왔는지 근거 */}
+                      {/* 영상 전체 성격은 접어 둔다 — 이 장면 말고 무엇을 더 소화하는지 */}
                       {r.media_summary && p.scene_summary && (
                         <details className="mt-2 group/scene">
                           <summary className="cursor-pointer list-none text-[11px] font-medium text-amber-100/70 hover:text-amber-100 transition-colors">
-                            검색어와 맞은 장면 보기
+                            이 영상 전체 분석 보기
                           </summary>
                           <p className="mt-1.5 max-h-32 overflow-y-auto pr-1 text-xs leading-relaxed text-white/65 select-text">
-                            {p.scene_summary}
+                            {r.media_summary}
                           </p>
                         </details>
                       )}
@@ -645,11 +653,14 @@ export default function TalentSearchView() {
                           onClick={() =>
                             setPlayer({
                               src: `/api/media/${p.talent_media_id}`,
-                              // 제목은 누구의 어느 장면인지, 분석 내용은 summary 로
                               title: prof?.name
                                 ? `${prof.name}${p.scene_id ? ` · ${p.scene_id}` : ""}`
                                 : null,
-                              summary: p.scene_summary ?? null,
+                              // 카드 본문과 **같은 글**(매칭된 장면)을 넘긴다.
+                              // 클릭 전에 읽은 내용과 클릭 후 내용이 달라 보이면
+                              // 왜 이 영상이 나왔는지 헷갈린다.
+                              summary: p.scene_summary ?? r.media_summary ?? null,
+                              fullSummary: r.media_summary ?? null,
                             })
                           }
                           className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs px-3 py-1.5 transition-colors"
@@ -673,6 +684,7 @@ export default function TalentSearchView() {
         src={player?.src ?? null}
         title={player?.title ?? null}
         summary={player?.summary ?? null}
+        fullSummary={player?.fullSummary ?? null}
       />
 
       <TalentDetailModal accountId={detailId} onClose={() => setDetailId(null)} />
